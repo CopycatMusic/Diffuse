@@ -41,6 +41,13 @@ void DiffuseEngine::prepare(double sampleRate, int maxBlockSize) {
 
   delayWritePosL.assign(static_cast<size_t>(maxNumBins), 0);
   delayWritePosR.assign(static_cast<size_t>(maxNumBins), 0);
+
+  // Initialize dry delay buffers (sized for max FFT size)
+  dryDelayBufferL.setSize(1, maxFFTSize);
+  dryDelayBufferR.setSize(1, maxFFTSize);
+  dryDelayBufferL.clear();
+  dryDelayBufferR.clear();
+  dryDelayWritePos = 0;
 }
 
 void DiffuseEngine::reset() {
@@ -54,6 +61,10 @@ void DiffuseEngine::reset() {
             std::complex<float>(0.0f, 0.0f));
   std::fill(delayWritePosL.begin(), delayWritePosL.end(), 0);
   std::fill(delayWritePosR.begin(), delayWritePosR.end(), 0);
+
+  dryDelayBufferL.clear();
+  dryDelayBufferR.clear();
+  dryDelayWritePos = 0;
 }
 
 void DiffuseEngine::process(juce::AudioBuffer<float> &buffer) {
@@ -69,11 +80,37 @@ void DiffuseEngine::process(juce::AudioBuffer<float> &buffer) {
   if (mixAmount <= 0.0f)
     return;
 
-  // Save dry signal for mixing
+  // Save dry signal for mixing (must be delayed to match wet signal latency)
   juce::AudioBuffer<float> dryBuffer;
+  int latency = getLatencyInSamples();
+
   if (mixAmount < 1.0f) {
-    dryBuffer.makeCopyOf(buffer);
+    dryBuffer.setSize(numChannels, numSamples);
+
+    for (int ch = 0; ch < numChannels; ++ch) {
+      auto *in = buffer.getReadPointer(ch);
+      auto *outDelayed = dryBuffer.getWritePointer(ch);
+      auto *delayData = (ch == 0) ? dryDelayBufferL.getWritePointer(0)
+                                  : dryDelayBufferR.getWritePointer(0);
+      int delaySize = dryDelayBufferL.getNumSamples();
+
+      for (int i = 0; i < numSamples; ++i) {
+        // Store current input in delay line
+        int wp = (dryDelayWritePos + i) % delaySize;
+        delayData[wp] = in[i];
+
+        // Read delayed sample (circular buffer)
+        // Latency is the offset: Read from (wp - latency)
+        int rp = (wp - latency + delaySize) % delaySize;
+        outDelayed[i] = delayData[rp];
+      }
+    }
   }
+
+  // Update write position for next block (only once after all channels
+  // processed)
+  dryDelayWritePos =
+      (dryDelayWritePos + numSamples) % dryDelayBufferL.getNumSamples();
 
   // Process left/mono channel through STFT
   auto *leftIn = buffer.getReadPointer(0);

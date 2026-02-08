@@ -18,9 +18,11 @@ public:
 
   static juce::Colour getAccentPrimary() { return juce::Colour(0xFF56D9F0); }
   // Sky Blue
-  static juce::Colour getAccentSecondary() { return juce::Colour(0xFFE63946); }
+  // static juce::Colour getAccentSecondary() { return juce::Colour(0xFFE63946);
+  // }
   // Punch Red
-  static juce::Colour getAccentTertiary() { return juce::Colour(0xFFffd93d); }
+  // static juce::Colour getAccentTertiary() { return juce::Colour(0xFFffd93d);
+  // }
   // Mustard Yellow
   static juce::Colour getTextPrimary() { return juce::Colour(0xFFf5f5f5); }
   static juce::Colour getTextSecondary() { return juce::Colour(0xFF999999); }

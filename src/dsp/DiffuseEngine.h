@@ -81,6 +81,11 @@ private:
   std::vector<int> delayWritePosR;
   int maxDelaySamples = 0;
 
+  // Dry signal delay buffers (for alignment with STFT latency)
+  juce::AudioBuffer<float> dryDelayBufferL;
+  juce::AudioBuffer<float> dryDelayBufferR;
+  int dryDelayWritePos = 0;
+
   // Current settings
   std::atomic<double> currentSampleRate{44100.0};
   std::atomic<int> currentFFTSize{2048};

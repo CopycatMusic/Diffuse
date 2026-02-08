@@ -59,6 +59,8 @@ void CopycatDiffuseProcessor::prepareToPlay(double sampleRate,
     int fftSizes[] = {512, 1024, 2048}; // Low, Medium, High
     engine.setFFTSize(fftSizes[fftIndex]);
   }
+
+  setLatencySamples(engine.getLatencyInSamples());
 }
 
 void CopycatDiffuseProcessor::releaseResources() { engine.reset(); }
@@ -94,7 +96,12 @@ void CopycatDiffuseProcessor::processBlock(juce::AudioBuffer<float> &buffer,
   if (fftsizeParam) {
     int fftIndex = static_cast<int>(fftsizeParam->load());
     int fftSizes[] = {512, 1024, 2048}; // Low, Medium, High
-    engine.setFFTSize(fftSizes[fftIndex]);
+    int newFFTSize = fftSizes[fftIndex];
+
+    if (newFFTSize != engine.getFFTSize()) {
+      engine.setFFTSize(newFFTSize);
+      setLatencySamples(engine.getLatencyInSamples());
+    }
   }
 
   auto *decayParam = parameters.getRawParameterValue("decay");
