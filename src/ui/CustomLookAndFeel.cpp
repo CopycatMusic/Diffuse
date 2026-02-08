@@ -18,7 +18,7 @@ CustomLookAndFeel::CustomLookAndFeel() {
   setColour(juce::Slider::backgroundColourId, backgroundMedium);
   setColour(juce::Slider::textBoxTextColourId, textPrimary);
   setColour(juce::Slider::textBoxBackgroundColourId, backgroundDark);
-  setColour(juce::Slider::textBoxOutlineColourId, textSecondary);
+  setColour(juce::Slider::textBoxOutlineColourId, getTextBoxOutline());
 
   setColour(juce::TextButton::buttonColourId, backgroundMedium);
   setColour(juce::TextButton::buttonOnColourId, accentPrimary);
@@ -139,21 +139,19 @@ CustomLookAndFeel::getSliderLayout(juce::Slider &slider) {
   if (style == juce::Slider::TextBoxLeft ||
       style == juce::Slider::TextBoxRight) {
     auto bounds = slider.getLocalBounds();
-    int knobSize = UIConstants::kSmallKnob;
-    int gap = 5;
+    int knobHeight = bounds.getHeight();
 
-    // For small knobs (55px), shift TextBox to start at 27px (bottom half)
-    // and add horizontal gap
-    if (bounds.getHeight() == knobSize) {
-      layout.textBoxBounds.setY(27);
+    // Push text box to the lower half of the knob (vertical center)
+    int textBoxY = knobHeight / 2;
+    layout.textBoxBounds.setY(textBoxY);
 
-      if (style == juce::Slider::TextBoxLeft) {
-        layout.sliderBounds.setX(slider.getTextBoxWidth() + gap);
-        layout.textBoxBounds.setX(0);
-      } else {
-        layout.sliderBounds.setX(0);
-        layout.textBoxBounds.setX(knobSize + gap);
-      }
+    if (style == juce::Slider::TextBoxLeft) {
+      layout.sliderBounds.setX(slider.getTextBoxWidth() +
+                               UIConstants::kTextGap);
+      layout.textBoxBounds.setX(0);
+    } else { // TextBoxRight
+      layout.sliderBounds.setX(0);
+      layout.textBoxBounds.setX(knobHeight + UIConstants::kTextGap);
     }
   }
 

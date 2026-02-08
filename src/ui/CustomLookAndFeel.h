@@ -25,7 +25,8 @@ public:
   // }
   // Mustard Yellow
   static juce::Colour getTextPrimary() { return juce::Colour(0xFFf5f5f5); }
-  static juce::Colour getTextSecondary() { return juce::Colour(0xFF5C677D); }
+  static juce::Colour getTextSecondary() { return juce::Colour(0xFF999999); }
+  static juce::Colour getTextBoxOutline() { return juce::Colour(0xFF242C39); }
 
   // https://coolors.co/0d1117-161b22-00d4ff-ff6b6b-ffd93d-ffffff
   // new color version
