@@ -7,9 +7,10 @@ CustomLookAndFeel::CustomLookAndFeel() {
   backgroundDark = getBackgroundDark();
   backgroundMedium = getBackgroundMedium();
   accentPrimary = getAccentPrimary();
-  accentSecondary = getAccentSecondary();
-  accentTertiary = getAccentTertiary();
+  // accentSecondary = getAccentSecondary();
+  // accentTertiary = getAccentTertiary();
   textPrimary = getTextPrimary();
+  textSecondary = getTextSecondary();
 
   // Set default colors
   setColour(juce::Slider::thumbColourId, accentPrimary);
@@ -17,8 +18,7 @@ CustomLookAndFeel::CustomLookAndFeel() {
   setColour(juce::Slider::backgroundColourId, backgroundMedium);
   setColour(juce::Slider::textBoxTextColourId, textPrimary);
   setColour(juce::Slider::textBoxBackgroundColourId, backgroundDark);
-  setColour(juce::Slider::textBoxOutlineColourId,
-            juce::Colours::transparentBlack);
+  setColour(juce::Slider::textBoxOutlineColourId, textSecondary);
 
   setColour(juce::TextButton::buttonColourId, backgroundMedium);
   setColour(juce::TextButton::buttonOnColourId, accentPrimary);
@@ -139,7 +139,7 @@ CustomLookAndFeel::getSliderLayout(juce::Slider &slider) {
   if (style == juce::Slider::TextBoxLeft ||
       style == juce::Slider::TextBoxRight) {
     auto bounds = slider.getLocalBounds();
-    int knobSize = UIConstants::kSmallKnobSize;
+    int knobSize = UIConstants::kSmallKnob;
     int gap = 5;
 
     // For small knobs (55px), shift TextBox to start at 27px (bottom half)

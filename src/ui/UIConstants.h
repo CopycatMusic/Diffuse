@@ -6,27 +6,36 @@
 namespace UIConstants {
 
 // ===== Window Dimensions =====
-constexpr int kDefaultWindowWidth = 300;
-constexpr int kDefaultWindowHeight = 450;
-
-// ===== Layout =====
+constexpr int kWindowWidth = 300;
+constexpr int kWindowHeight = 450;
 constexpr int kTitleBarHeight = 40;
+constexpr int kTitleGap = 0;
 
-// ===== Margins and Spacing =====
-constexpr int kMargin = 12;
-constexpr int kSpacing = 10;
-constexpr int kLabelHeight = 15;
-constexpr int kTextBoxHeight = 15;
-constexpr int kSectionSpacing = 16;
-constexpr int kRowHeight = 25;
+// ===== Layout Spacing =====
+constexpr int kMargin = 12; // Outer window padding
+constexpr int kSectionGap =
+    16;                      // Vertical gap between major functional sections
+constexpr int kMainGap = 10; // General vertical gap between components
+constexpr int kSubGap = 5;   // Tight vertical gap (e.g. Label to Knob)
+
+// ===== Element Dimensions =====
+constexpr int kElementHeight = 15; // Standard height for labels and textboxes
+constexpr int kRowHeight = 25;     // Standard height for buttons/toggles
+constexpr int kTextBoxWidth = 65;
+constexpr int kTextGap = 40; // Horizontal gap between knob and text
 
 // ===== Knob Sizes (square) =====
-constexpr int kLargeKnobSize = 90;
-constexpr int kSmallKnobSize = 50;
+constexpr int kLargeKnob = 100;
+constexpr int kMediumKnob = 80;
+constexpr int kSmallKnob = 50;
+constexpr int kBottomItemWidth = 80;
+constexpr int kBottomItemGap = 15;
+
+// ===== Component Specifics =====
+constexpr int kButtonWidth = 80;
 
 // ===== Font Sizes =====
 constexpr float kTitleFontSize = 32.0f;
-constexpr float kDefaultFontSize = 13.0f;
-constexpr float kSmallFontSize = 11.0f;
+constexpr float kDefaultFontSize = 12.0f;
 
 } // namespace UIConstants

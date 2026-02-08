@@ -49,6 +49,12 @@ private:
   std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
       mixAttachment;
 
+  // Gain Knob
+  juce::Slider gainSlider;
+  juce::Label gainLabel;
+  std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
+      gainAttachment;
+
   // Separator line position (calculated in resized)
   int separatorLineY = 0;
 

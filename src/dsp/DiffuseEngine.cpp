@@ -12,13 +12,13 @@ void DiffuseEngine::prepare(double sampleRate, int maxBlockSize) {
 
   // Pre-allocation sizing: maxFFTSize for bins, minFFTSize for hop (worst case
   // delay)
-  constexpr int maxFFTSize = 2048;
-  constexpr int minFFTSize = 512;
+  constexpr int maxFFTSize = 4096;
+  constexpr int minFFTSize = 256;
   constexpr int maxNumBins = maxFFTSize / 2 + 1;
   constexpr int overlapFactor = 4;
   int minHopSize =
       minFFTSize /
-      overlapFactor; // 512/4 = 128 (smallest hop = most frames needed)
+      overlapFactor; // 256/4 = 64 (smallest hop = most frames needed)
 
   // Store current working values
   currentNumBins = stftProcessorL.getNumBins();
@@ -143,8 +143,14 @@ void DiffuseEngine::process(juce::AudioBuffer<float> &buffer) {
       auto *wet = buffer.getWritePointer(ch);
       auto *dry = dryBuffer.getReadPointer(ch);
       for (int i = 0; i < numSamples; ++i) {
-        wet[i] = dry[i] * dryGain + wet[i] * wetGain;
+        wet[i] = (dry[i] * dryGain + wet[i] * wetGain) * outputGain.load();
       }
+    }
+  } else {
+    // If 100% wet, still apply output gain
+    float g = outputGain.load();
+    if (g != 1.0f) {
+      buffer.applyGain(g);
     }
   }
 }

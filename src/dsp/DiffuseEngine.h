@@ -46,6 +46,16 @@ public:
   float getMix() const { return mix.load(); }
 
   /**
+   * Set output gain in decibels.
+   */
+  void setGain(float decibels) {
+    outputGain = juce::Decibels::decibelsToGain(decibels);
+  }
+  float getGain() const {
+    return juce::Decibels::gainToDecibels(outputGain.load());
+  }
+
+  /**
    * Set FFT size (1024, 2048, 4096, 8192, 16384).
    */
   void setFFTSize(int size);
@@ -73,6 +83,7 @@ private:
   std::atomic<float> lowCutFreq{400.0f};    // Hz
   std::atomic<bool> decayEnabled{false};    // Decay toggle
   std::atomic<float> mix{1.0f};             // 0.0 = dry, 1.0 = wet
+  std::atomic<float> outputGain{1.0f};      // Multiplier (default 0dB = 1.0)
 
   // Per-bin delay buffers (flattened for cache locality)
   std::vector<std::complex<float>> delayBufferL;

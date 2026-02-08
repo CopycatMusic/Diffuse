@@ -33,6 +33,10 @@ void STFTProcessor::setFFTSize(int size) {
 
     // Select pre-allocated FFT object based on size
     switch (fftSize) {
+    case 256:
+      fft = fft256;
+      window = window256;
+      break;
     case 512:
       fft = fft512;
       window = window512;
@@ -42,9 +46,13 @@ void STFTProcessor::setFFTSize(int size) {
       window = window1024;
       break;
     case 2048:
-    default:
       fft = fft2048;
       window = window2048;
+      break;
+    case 4096:
+    default:
+      fft = fft4096;
+      window = window4096;
       break;
     }
 
@@ -84,25 +92,35 @@ void STFTProcessor::setOverlapFactor(int factor) {
 
 void STFTProcessor::initBuffers() {
   // Pre-allocate FFT objects for all supported sizes (done once)
+  fft256Owner = std::make_unique<juce::dsp::FFT>(8);   // 2^8 = 256
   fft512Owner = std::make_unique<juce::dsp::FFT>(9);   // 2^9 = 512
   fft1024Owner = std::make_unique<juce::dsp::FFT>(10); // 2^10 = 1024
   fft2048Owner = std::make_unique<juce::dsp::FFT>(11); // 2^11 = 2048
+  fft4096Owner = std::make_unique<juce::dsp::FFT>(12); // 2^12 = 4096
 
+  fft256 = fft256Owner.get();
   fft512 = fft512Owner.get();
   fft1024 = fft1024Owner.get();
   fft2048 = fft2048Owner.get();
+  fft4096 = fft4096Owner.get();
 
   // Pre-allocate window functions for all supported sizes
+  window256Owner = std::make_unique<juce::dsp::WindowingFunction<float>>(
+      257, juce::dsp::WindowingFunction<float>::hann, false);
   window512Owner = std::make_unique<juce::dsp::WindowingFunction<float>>(
       513, juce::dsp::WindowingFunction<float>::hann, false);
   window1024Owner = std::make_unique<juce::dsp::WindowingFunction<float>>(
       1025, juce::dsp::WindowingFunction<float>::hann, false);
   window2048Owner = std::make_unique<juce::dsp::WindowingFunction<float>>(
       2049, juce::dsp::WindowingFunction<float>::hann, false);
+  window4096Owner = std::make_unique<juce::dsp::WindowingFunction<float>>(
+      4097, juce::dsp::WindowingFunction<float>::hann, false);
 
+  window256 = window256Owner.get();
   window512 = window512Owner.get();
   window1024 = window1024Owner.get();
   window2048 = window2048Owner.get();
+  window4096 = window4096Owner.get();
 
   // Set current pointers based on default fftSize
   fft = fft2048;

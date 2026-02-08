@@ -1,4 +1,3 @@
-#include "PluginProcessor.h"
 #include "PluginEditor.h"
 
 CopycatDiffuseProcessor::CopycatDiffuseProcessor()
@@ -28,22 +27,28 @@ CopycatDiffuseProcessor::createParameterLayout() {
       juce::NormalisableRange<float>(20.0f, 2000.0f, 1.0f, 0.5f), 400.0f,
       juce::AudioParameterFloatAttributes().withLabel("Hz")));
 
-  // FFT Size (3-level choice: Low/Medium/High)
+  // FFT Size (5-level choice: 256, 512, 1024, 2048, 4096)
   params.push_back(std::make_unique<juce::AudioParameterChoice>(
       juce::ParameterID{"fftsize", 1}, "FFT Size",
-      juce::StringArray{"Low", "Medium", "High"},
-      1 // Default: Medium (index 1 = 2048)
+      juce::StringArray{"256", "512", "1024", "2048", "4096"},
+      2 // Default: 1024 (index 2)
       ));
 
   // Decay toggle
   params.push_back(std::make_unique<juce::AudioParameterBool>(
-      juce::ParameterID{"decay", 1}, "Decay", false));
+      juce::ParameterID{"decay", 1}, "Decay", true));
 
   // Mix (0-100%, default 100% wet)
   params.push_back(std::make_unique<juce::AudioParameterFloat>(
       juce::ParameterID{"mix", 1}, "Mix",
       juce::NormalisableRange<float>(0.0f, 100.0f, 0.1f), 100.0f,
       juce::AudioParameterFloatAttributes().withLabel("%")));
+
+  // Output Gain (-6 to +6 dB, default 0 dB)
+  params.push_back(std::make_unique<juce::AudioParameterFloat>(
+      juce::ParameterID{"gain", 1}, "Gain",
+      juce::NormalisableRange<float>(-6.0f, 6.0f, 0.1f), 0.0f,
+      juce::AudioParameterFloatAttributes().withLabel("dB")));
 
   return {params.begin(), params.end()};
 }
@@ -56,7 +61,7 @@ void CopycatDiffuseProcessor::prepareToPlay(double sampleRate,
   auto *fftParam = parameters.getRawParameterValue("fftsize");
   if (fftParam) {
     int fftIndex = static_cast<int>(fftParam->load());
-    int fftSizes[] = {512, 1024, 2048}; // Low, Medium, High
+    int fftSizes[] = {256, 512, 1024, 2048, 4096};
     engine.setFFTSize(fftSizes[fftIndex]);
   }
 
@@ -95,7 +100,7 @@ void CopycatDiffuseProcessor::processBlock(juce::AudioBuffer<float> &buffer,
 
   if (fftsizeParam) {
     int fftIndex = static_cast<int>(fftsizeParam->load());
-    int fftSizes[] = {512, 1024, 2048}; // Low, Medium, High
+    int fftSizes[] = {256, 512, 1024, 2048, 4096};
     int newFFTSize = fftSizes[fftIndex];
 
     if (newFFTSize != engine.getFFTSize()) {
@@ -112,6 +117,11 @@ void CopycatDiffuseProcessor::processBlock(juce::AudioBuffer<float> &buffer,
   auto *mixParam = parameters.getRawParameterValue("mix");
   if (mixParam) {
     engine.setMix(mixParam->load() / 100.0f); // Convert % to 0-1
+  }
+
+  auto *gainParam = parameters.getRawParameterValue("gain");
+  if (gainParam) {
+    engine.setGain(gainParam->load());
   }
 
   // Process audio

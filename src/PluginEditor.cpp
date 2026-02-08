@@ -29,9 +29,11 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
 
   // ===== Section 1: Diffuse + LowCut + Decay =====
 
-  // Diffuse Knob (Large, center with label above)
+  // Diffuse Knob (Large, TextBoxRight)
   diffuseSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-  diffuseSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 80, 18);
+  diffuseSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false,
+                                UIConstants::kTextBoxWidth,
+                                UIConstants::kElementHeight);
   diffuseSlider.setMouseDragSensitivity(200);
   addAndMakeVisible(diffuseSlider);
   diffuseAttachment =
@@ -46,7 +48,9 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
 
   // Low Cut Knob (Small, label above, TextBoxRight)
   lowcutSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-  lowcutSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 65, 15);
+  lowcutSlider.setTextBoxStyle(juce::Slider::TextBoxLeft, false,
+                               UIConstants::kTextBoxWidth,
+                               UIConstants::kElementHeight);
   lowcutSlider.setMouseDragSensitivity(150);
   addAndMakeVisible(lowcutSlider);
   lowcutAttachment =
@@ -72,24 +76,28 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
 
   // ===== Section 2: Resolution + Mix =====
 
-  // Resolution (FFT Size) Knob (Small, label above, TextBoxRight)
+  // Resolution (FFT Size) Knob (Small, Label Above, Value Below)
   fftSizeSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-  fftSizeSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 65, 15);
+  fftSizeSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false,
+                                UIConstants::kTextBoxWidth,
+                                UIConstants::kElementHeight);
   fftSizeSlider.setMouseDragSensitivity(80);
   addAndMakeVisible(fftSizeSlider);
   fftSizeAttachment =
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
           processorRef.getParameters(), "fftsize", fftSizeSlider);
 
-  fftSizeLabel.setText("Resolution", juce::dontSendNotification);
+  fftSizeLabel.setText("FFT Size", juce::dontSendNotification);
   fftSizeLabel.setJustificationType(juce::Justification::centred);
   fftSizeLabel.setColour(juce::Label::textColourId,
                          CustomLookAndFeel::getTextPrimary());
   addAndMakeVisible(fftSizeLabel);
 
-  // Mix Knob (Small, label above, TextBoxRight)
+  // Mix Knob (Small, Label Above, Value Below)
   mixSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-  mixSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 65, 15);
+  mixSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false,
+                            UIConstants::kTextBoxWidth,
+                            UIConstants::kElementHeight);
   mixSlider.setMouseDragSensitivity(150);
   addAndMakeVisible(mixSlider);
   mixAttachment =
@@ -102,7 +110,24 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
                      CustomLookAndFeel::getTextPrimary());
   addAndMakeVisible(mixLabel);
 
-  setSize(UIConstants::kDefaultWindowWidth, UIConstants::kDefaultWindowHeight);
+  // Gain Knob (Small, Label Above, Value Below)
+  gainSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+  gainSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false,
+                             UIConstants::kTextBoxWidth,
+                             UIConstants::kElementHeight);
+  gainSlider.setMouseDragSensitivity(150);
+  addAndMakeVisible(gainSlider);
+  gainAttachment =
+      std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+          processorRef.getParameters(), "gain", gainSlider);
+
+  gainLabel.setText("Gain", juce::dontSendNotification);
+  gainLabel.setJustificationType(juce::Justification::centred);
+  gainLabel.setColour(juce::Label::textColourId,
+                      CustomLookAndFeel::getTextPrimary());
+  addAndMakeVisible(gainLabel);
+
+  setSize(UIConstants::kWindowWidth, UIConstants::kWindowHeight);
 }
 
 CopycatDiffuseEditor::~CopycatDiffuseEditor() { setLookAndFeel(nullptr); }
@@ -135,10 +160,9 @@ void CopycatDiffuseEditor::paint(juce::Graphics &g) {
 void CopycatDiffuseEditor::resized() {
   auto bounds = getLocalBounds();
   const int margin = UIConstants::kMargin;
-  const int largeKnob = UIConstants::kLargeKnobSize;
-  const int smallKnob = UIConstants::kSmallKnobSize;
-  const int textBoxWidth = 65;
-  const int textGap = 5;
+  const int largeKnob = UIConstants::kLargeKnob;
+  const int mediumKnob = UIConstants::kMediumKnob;
+  const int smallKnob = UIConstants::kSmallKnob;
   int width = bounds.getWidth();
 
   // ===== Title Bar =====
@@ -147,65 +171,91 @@ void CopycatDiffuseEditor::resized() {
   // Calculate widths to center the combined title
   int brandWidth = titleFont.getStringWidth(brandLabel.getText());
   int diffuseWidth = titleFont.getStringWidth(titleLabel.getText());
-  int titleGap = 4; // Reduced from 8px to 4px
-  int totalTitleWidth = brandWidth + titleGap + diffuseWidth;
+  int totalTitleWidth = brandWidth + UIConstants::kTitleGap + diffuseWidth;
 
   int titleStartX = (titleArea.getWidth() - totalTitleWidth) / 2;
 
   brandLabel.setBounds(titleStartX, 0, brandWidth,
                        UIConstants::kTitleBarHeight);
-  titleLabel.setBounds(titleStartX + brandWidth + titleGap, 0, diffuseWidth,
-                       UIConstants::kTitleBarHeight);
+  titleLabel.setBounds(titleStartX + brandWidth + UIConstants::kTitleGap, 0,
+                       diffuseWidth, UIConstants::kTitleBarHeight);
 
   int y = UIConstants::kTitleBarHeight + margin;
 
-  // ===== Section 1: Diffuse (large, centered with label above) =====
-  diffuseLabel.setBounds(0, y, width, UIConstants::kLabelHeight);
-  y += UIConstants::kLabelHeight + 4;
+  // ===== Section 1: Diffuse (knob left, label above textbox on right) =====
+  int diffuseWidthWithText =
+      largeKnob + UIConstants::kTextBoxWidth + UIConstants::kTextGap;
+  int diffuseX = (width - diffuseWidthWithText) / 2;
 
-  int diffuseX = (width - largeKnob) / 2;
-  diffuseSlider.setBounds(diffuseX, y, largeKnob,
-                          largeKnob + UIConstants::kTextBoxHeight + 5);
-  y += largeKnob + UIConstants::kTextBoxHeight + 12;
+  diffuseSlider.setBounds(diffuseX, y, diffuseWidthWithText, largeKnob);
 
-  // Low Cut (knob left, label above textbox on right)
-  int sliderWidthWithText = smallKnob + textBoxWidth + textGap;
+  // Calculate vertical center for label to align with the centered reading box
+  int diffuseLabelY = y + (largeKnob - UIConstants::kElementHeight) / 2 -
+                      UIConstants::kElementHeight - UIConstants::kSubGap;
+
+  diffuseLabel.setBounds(diffuseX + largeKnob + UIConstants::kTextGap,
+                         diffuseLabelY, UIConstants::kTextBoxWidth,
+                         UIConstants::kElementHeight);
+  y += largeKnob + UIConstants::kSectionGap;
+
+  // Low Cut (label above textbox on left, knob on right)
+  int sliderWidthWithText =
+      mediumKnob + UIConstants::kTextBoxWidth + UIConstants::kTextGap;
   int sliderX = (width - sliderWidthWithText) / 2;
 
-  lowcutSlider.setBounds(sliderX, y, sliderWidthWithText, smallKnob);
-  // Label positioned above the textbox (right side of knob)
-  lowcutLabel.setBounds(sliderX + smallKnob + textGap, y - 2, textBoxWidth,
-                        UIConstants::kLabelHeight);
-  y += smallKnob + 10;
+  lowcutSlider.setBounds(sliderX, y, sliderWidthWithText, mediumKnob);
+
+  // Calculate vertical center for label for medium knob
+  int lowcutLabelY = y + (mediumKnob - UIConstants::kElementHeight) / 2 -
+                     UIConstants::kElementHeight - UIConstants::kSubGap;
+
+  lowcutLabel.setBounds(sliderX, lowcutLabelY, UIConstants::kTextBoxWidth,
+                        UIConstants::kElementHeight);
+  y += mediumKnob + UIConstants::kMainGap;
 
   // Decay button (centered)
-  int buttonWidth = 100;
+  int buttonWidth = UIConstants::kButtonWidth;
   int buttonHeight = UIConstants::kRowHeight;
   decayButton.setBounds((width - buttonWidth) / 2, y, buttonWidth,
                         buttonHeight);
-  y += buttonHeight + margin;
+  y += buttonHeight + UIConstants::kSectionGap;
 
   // ===== Separator Line =====
   separatorLineY = y;
-  y += margin;
+  y += UIConstants::kSectionGap;
 
-  // ===== Section 2: Resolution + Mix (side by side, knob left, label above
-  // textbox) =====
-  int sectionHalfWidth = (width - margin * 3) / 2;
-  int sideKnobWidth = smallKnob + textBoxWidth + textGap;
+  // ===== Section 2: FFT Size + Mix + Gain (3 knobs side-by-side, centered)
+  // =====
+  int itemWidth = UIConstants::kBottomItemWidth;
+  int itemGap = UIConstants::kBottomItemGap;
+  int totalBottomWidth = (itemWidth * 3) + (itemGap * 2);
+  int startX = (width - totalBottomWidth) / 2;
 
-  // Resolution (left)
-  int resX = margin + (sectionHalfWidth - sideKnobWidth) / 2;
-  fftSizeSlider.setBounds(resX, y, sideKnobWidth, smallKnob);
-  // Label above textbox
-  fftSizeLabel.setBounds(resX + smallKnob + textGap, y - 2, textBoxWidth,
-                         UIConstants::kLabelHeight);
+  // Common Y-offset for the bottom row labels
+  int bottomRowLabelY = y;
+  int bottomRowKnobY = y + UIConstants::kElementHeight;
 
-  // Mix (right)
-  int mixX = margin + sectionHalfWidth + margin +
-             (sectionHalfWidth - sideKnobWidth) / 2;
-  mixSlider.setBounds(mixX, y, sideKnobWidth, smallKnob);
-  // Label above textbox
-  mixLabel.setBounds(mixX + smallKnob + textGap, y - 2, textBoxWidth,
-                     UIConstants::kLabelHeight);
+  // FFT Size - Left
+  int fftX = startX;
+  fftSizeLabel.setBounds(fftX, bottomRowLabelY, itemWidth,
+                         UIConstants::kElementHeight);
+  fftSizeSlider.setBounds(fftX, bottomRowKnobY, itemWidth,
+                          smallKnob + UIConstants::kElementHeight +
+                              UIConstants::kSubGap);
+
+  // Mix - Center
+  int mixX = fftX + itemWidth + itemGap;
+  mixLabel.setBounds(mixX, bottomRowLabelY, itemWidth,
+                     UIConstants::kElementHeight);
+  mixSlider.setBounds(mixX, bottomRowKnobY, itemWidth,
+                      smallKnob + UIConstants::kElementHeight +
+                          UIConstants::kSubGap);
+
+  // Gain - Right
+  int gainX = mixX + itemWidth + itemGap;
+  gainLabel.setBounds(gainX, bottomRowLabelY, itemWidth,
+                      UIConstants::kElementHeight);
+  gainSlider.setBounds(gainX, bottomRowKnobY, itemWidth,
+                       smallKnob + UIConstants::kElementHeight +
+                           UIConstants::kSubGap);
 }
