@@ -6,23 +6,32 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
     : AudioProcessorEditor(&p), processorRef(p) {
   setLookAndFeel(&customLookAndFeel);
 
-  // Load custom font for title
-  auto typefacePtr = juce::Typeface::createSystemTypefaceFor(
+  // Load embedded Montserrat Bold font
+  auto montserratTypeface = juce::Typeface::createSystemTypefaceFor(
       BinaryData::MontserratBold_ttf, BinaryData::MontserratBold_ttfSize);
-  titleFont = juce::Font(
-      juce::FontOptions(typefacePtr).withHeight(UIConstants::kTitleFontSize));
+  titleFont =
+      juce::Font(montserratTypeface).withHeight(UIConstants::kTitleFontSize);
 
-  // Title Label
-  titleLabel.setText("CopyCat Diffuse", juce::dontSendNotification);
+  // ===== Title Bar: Two-tone labels =====
+  brandLabel.setText("COPYCAT", juce::dontSendNotification);
+  brandLabel.setFont(titleFont);
+  brandLabel.setColour(juce::Label::textColourId,
+                       CustomLookAndFeel::getTextPrimary());
+  brandLabel.setJustificationType(juce::Justification::centredRight);
+  addAndMakeVisible(brandLabel);
+
+  titleLabel.setText("DIFFUSE", juce::dontSendNotification);
   titleLabel.setFont(titleFont);
-  titleLabel.setJustificationType(juce::Justification::centred);
   titleLabel.setColour(juce::Label::textColourId,
-                       CustomLookAndFeel::getAccentPrimary());
+                       CustomLookAndFeel::getTextSecondary());
+  titleLabel.setJustificationType(juce::Justification::centredLeft);
   addAndMakeVisible(titleLabel);
 
-  // Diffuse Knob
+  // ===== Section 1: Diffuse + LowCut + Decay =====
+
+  // Diffuse Knob (Large, center with label above)
   diffuseSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-  diffuseSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 70, 18);
+  diffuseSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 80, 18);
   diffuseSlider.setMouseDragSensitivity(200);
   addAndMakeVisible(diffuseSlider);
   diffuseAttachment =
@@ -35,10 +44,10 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
                          CustomLookAndFeel::getTextPrimary());
   addAndMakeVisible(diffuseLabel);
 
-  // Low Cut Knob
+  // Low Cut Knob (Small, label above, TextBoxRight)
   lowcutSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-  lowcutSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 70, 18);
-  lowcutSlider.setMouseDragSensitivity(200);
+  lowcutSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 65, 15);
+  lowcutSlider.setMouseDragSensitivity(150);
   addAndMakeVisible(lowcutSlider);
   lowcutAttachment =
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
@@ -50,9 +59,22 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
                         CustomLookAndFeel::getTextPrimary());
   addAndMakeVisible(lowcutLabel);
 
-  // FFT Size Knob (3-level: Low/Medium/High = 512/2048/8192)
+  // Decay Toggle Button (TextButton style like reference project)
+  decayButton.setClickingTogglesState(true);
+  decayButton.setColour(juce::TextButton::buttonOnColourId,
+                        CustomLookAndFeel::getAccentPrimary());
+  decayButton.setColour(juce::TextButton::textColourOnId,
+                        CustomLookAndFeel::getTextPrimary());
+  addAndMakeVisible(decayButton);
+  decayAttachment =
+      std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
+          processorRef.getParameters(), "decay", decayButton);
+
+  // ===== Section 2: Resolution + Mix =====
+
+  // Resolution (FFT Size) Knob (Small, label above, TextBoxRight)
   fftSizeSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-  fftSizeSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 70, 18);
+  fftSizeSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 65, 15);
   fftSizeSlider.setMouseDragSensitivity(80);
   addAndMakeVisible(fftSizeSlider);
   fftSizeAttachment =
@@ -65,20 +87,9 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
                          CustomLookAndFeel::getTextPrimary());
   addAndMakeVisible(fftSizeLabel);
 
-  // Decay Toggle Button
-  decayButton.setButtonText("Decay");
-  decayButton.setColour(juce::ToggleButton::textColourId,
-                        CustomLookAndFeel::getTextPrimary());
-  decayButton.setColour(juce::ToggleButton::tickColourId,
-                        CustomLookAndFeel::getAccentPrimary());
-  addAndMakeVisible(decayButton);
-  decayAttachment =
-      std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
-          processorRef.getParameters(), "decay", decayButton);
-
-  // Mix Knob
+  // Mix Knob (Small, label above, TextBoxRight)
   mixSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-  mixSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 70, 18);
+  mixSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 65, 15);
   mixSlider.setMouseDragSensitivity(150);
   addAndMakeVisible(mixSlider);
   mixAttachment =
@@ -97,65 +108,104 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
 CopycatDiffuseEditor::~CopycatDiffuseEditor() { setLookAndFeel(nullptr); }
 
 void CopycatDiffuseEditor::paint(juce::Graphics &g) {
-  g.fillAll(CustomLookAndFeel::getBackgroundDark());
+  auto bounds = getLocalBounds();
+  auto titleArea = bounds.removeFromTop(UIConstants::kTitleBarHeight);
+
+  // Title Bar Background
+  g.setColour(CustomLookAndFeel::getBackgroundMedium());
+  g.fillRect(titleArea);
+
+  // Main Background
+  g.setColour(CustomLookAndFeel::getBackgroundDark());
+  g.fillRect(bounds);
+
+  // Draw separator below title bar
+  g.setColour(CustomLookAndFeel::getTextPrimary().withAlpha(0.1f));
+  g.fillRect(0, UIConstants::kTitleBarHeight - 1, getWidth(), 1);
+
+  // Draw separator between sections
+  if (separatorLineY > 0) {
+    g.setColour(CustomLookAndFeel::getTextSecondary().withAlpha(0.2f));
+    g.drawHorizontalLine(separatorLineY,
+                         static_cast<float>(UIConstants::kMargin),
+                         static_cast<float>(getWidth() - UIConstants::kMargin));
+  }
 }
 
 void CopycatDiffuseEditor::resized() {
   auto bounds = getLocalBounds();
   const int margin = UIConstants::kMargin;
-  const int spacing = UIConstants::kSpacing;
-  const int labelHeight = UIConstants::kLabelHeight;
-  const int knobSize = UIConstants::kLargeKnobSize;
+  const int largeKnob = UIConstants::kLargeKnobSize;
+  const int smallKnob = UIConstants::kSmallKnobSize;
+  const int textBoxWidth = 65;
+  const int textGap = 5;
+  int width = bounds.getWidth();
 
-  // Title at the top
-  auto titleArea = bounds.removeFromTop(45);
-  titleLabel.setBounds(titleArea);
+  // ===== Title Bar =====
+  auto titleArea = bounds.removeFromTop(UIConstants::kTitleBarHeight);
 
-  bounds.removeFromTop(spacing / 2);
+  // Calculate widths to center the combined title
+  int brandWidth = titleFont.getStringWidth(brandLabel.getText());
+  int diffuseWidth = titleFont.getStringWidth(titleLabel.getText());
+  int titleGap = 4; // Reduced from 8px to 4px
+  int totalTitleWidth = brandWidth + titleGap + diffuseWidth;
 
-  // Center content area - 4 knobs in a row
-  auto contentBounds = bounds.reduced(margin, 0);
+  int titleStartX = (titleArea.getWidth() - totalTitleWidth) / 2;
 
-  // Calculate positions for 4 knobs
-  int knobSpacing = spacing;
-  int totalKnobsWidth = knobSize * 4 + knobSpacing * 5;
-  int startX = contentBounds.getCentreX() - totalKnobsWidth / 2;
+  brandLabel.setBounds(titleStartX, 0, brandWidth,
+                       UIConstants::kTitleBarHeight);
+  titleLabel.setBounds(titleStartX + brandWidth + titleGap, 0, diffuseWidth,
+                       UIConstants::kTitleBarHeight);
 
-  // Diffuse knob
-  int diffuseX = startX;
-  diffuseLabel.setBounds(diffuseX, contentBounds.getY(),
-                         knobSize + knobSpacing * 2, labelHeight);
-  diffuseSlider.setBounds(diffuseX + knobSpacing,
-                          contentBounds.getY() + labelHeight, knobSize,
-                          knobSize + 18);
+  int y = UIConstants::kTitleBarHeight + margin;
 
-  // Low Cut knob
-  int lowcutX = startX + knobSize + knobSpacing;
-  lowcutLabel.setBounds(lowcutX, contentBounds.getY(),
-                        knobSize + knobSpacing * 2, labelHeight);
-  lowcutSlider.setBounds(lowcutX + knobSpacing,
-                         contentBounds.getY() + labelHeight, knobSize,
-                         knobSize + 18);
+  // ===== Section 1: Diffuse (large, centered with label above) =====
+  diffuseLabel.setBounds(0, y, width, UIConstants::kLabelHeight);
+  y += UIConstants::kLabelHeight + 4;
 
-  // FFT Size knob
-  int fftX = startX + (knobSize + knobSpacing) * 2;
-  fftSizeLabel.setBounds(fftX, contentBounds.getY(), knobSize + knobSpacing * 2,
-                         labelHeight);
-  fftSizeSlider.setBounds(fftX + knobSpacing,
-                          contentBounds.getY() + labelHeight, knobSize,
-                          knobSize + 18);
+  int diffuseX = (width - largeKnob) / 2;
+  diffuseSlider.setBounds(diffuseX, y, largeKnob,
+                          largeKnob + UIConstants::kTextBoxHeight + 5);
+  y += largeKnob + UIConstants::kTextBoxHeight + 12;
 
-  // Mix knob
-  int mixX = startX + (knobSize + knobSpacing) * 3;
-  mixLabel.setBounds(mixX, contentBounds.getY(), knobSize + knobSpacing * 2,
-                     labelHeight);
-  mixSlider.setBounds(mixX + knobSpacing, contentBounds.getY() + labelHeight,
-                      knobSize, knobSize + 18);
+  // Low Cut (knob left, label above textbox on right)
+  int sliderWidthWithText = smallKnob + textBoxWidth + textGap;
+  int sliderX = (width - sliderWidthWithText) / 2;
 
-  // Decay button (below the knobs, centered)
-  int buttonWidth = 80;
-  int buttonHeight = 24;
-  int buttonY = contentBounds.getY() + labelHeight + knobSize + 28;
-  decayButton.setBounds(contentBounds.getCentreX() - buttonWidth / 2, buttonY,
-                        buttonWidth, buttonHeight);
+  lowcutSlider.setBounds(sliderX, y, sliderWidthWithText, smallKnob);
+  // Label positioned above the textbox (right side of knob)
+  lowcutLabel.setBounds(sliderX + smallKnob + textGap, y - 2, textBoxWidth,
+                        UIConstants::kLabelHeight);
+  y += smallKnob + 10;
+
+  // Decay button (centered)
+  int buttonWidth = 100;
+  int buttonHeight = UIConstants::kRowHeight;
+  decayButton.setBounds((width - buttonWidth) / 2, y, buttonWidth,
+                        buttonHeight);
+  y += buttonHeight + margin;
+
+  // ===== Separator Line =====
+  separatorLineY = y;
+  y += margin;
+
+  // ===== Section 2: Resolution + Mix (side by side, knob left, label above
+  // textbox) =====
+  int sectionHalfWidth = (width - margin * 3) / 2;
+  int sideKnobWidth = smallKnob + textBoxWidth + textGap;
+
+  // Resolution (left)
+  int resX = margin + (sectionHalfWidth - sideKnobWidth) / 2;
+  fftSizeSlider.setBounds(resX, y, sideKnobWidth, smallKnob);
+  // Label above textbox
+  fftSizeLabel.setBounds(resX + smallKnob + textGap, y - 2, textBoxWidth,
+                         UIConstants::kLabelHeight);
+
+  // Mix (right)
+  int mixX = margin + sectionHalfWidth + margin +
+             (sectionHalfWidth - sideKnobWidth) / 2;
+  mixSlider.setBounds(mixX, y, sideKnobWidth, smallKnob);
+  // Label above textbox
+  mixLabel.setBounds(mixX + smallKnob + textGap, y - 2, textBoxWidth,
+                     UIConstants::kLabelHeight);
 }

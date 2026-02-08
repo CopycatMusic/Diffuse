@@ -16,7 +16,8 @@ private:
   CopycatDiffuseProcessor &processorRef;
   CustomLookAndFeel customLookAndFeel;
 
-  // Title
+  // Title labels (two-tone: "COPYCAT" + "DIFFUSE")
+  juce::Label brandLabel;
   juce::Label titleLabel;
   juce::Font titleFont;
 
@@ -37,8 +38,8 @@ private:
   std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
       fftSizeAttachment;
 
-  // Decay Toggle Button
-  juce::ToggleButton decayButton;
+  // Decay Toggle Button (TextButton style like reference project)
+  juce::TextButton decayButton{"Decay"};
   std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment>
       decayAttachment;
 
@@ -47,6 +48,9 @@ private:
   juce::Label mixLabel;
   std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
       mixAttachment;
+
+  // Separator line position (calculated in resized)
+  int separatorLineY = 0;
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CopycatDiffuseEditor)
 };

@@ -13,8 +13,7 @@ public:
   ~CustomLookAndFeel() override;
 
   // Static color getters for use throughout the application
-  static juce::Colour getBackgroundPanel() { return juce::Colour(0xFF0a131f); }
-  static juce::Colour getBackgroundDark() { return juce::Colour(0xFF0F1C2E); }
+  static juce::Colour getBackgroundDark() { return juce::Colour(0xFF0a131f); }
   static juce::Colour getBackgroundMedium() { return juce::Colour(0xFF0f1c2e); }
 
   static juce::Colour getAccentPrimary() { return juce::Colour(0xFF56D9F0); }
