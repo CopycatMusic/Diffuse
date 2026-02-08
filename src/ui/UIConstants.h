@@ -6,8 +6,8 @@
 namespace UIConstants {
 
 // ===== Window Dimensions =====
-constexpr int kWindowWidth = 290;
-constexpr int kWindowHeight = 362;
+constexpr int kWindowWidth = 300;
+constexpr int kWindowHeight = 375;
 constexpr int kTitleBarHeight = 40;
 constexpr int kTitleGap = 0;
 

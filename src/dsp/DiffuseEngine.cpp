@@ -42,9 +42,13 @@ void DiffuseEngine::prepare(double sampleRate, int maxBlockSize) {
   delayWritePosL.assign(static_cast<size_t>(maxNumBins), 0);
   delayWritePosR.assign(static_cast<size_t>(maxNumBins), 0);
 
-  // Initialize dry delay buffers (sized for max FFT size)
-  dryDelayBufferL.setSize(1, maxFFTSize);
-  dryDelayBufferR.setSize(1, maxFFTSize);
+  // Initialize dry delay buffers
+  // Size must be larger than max latency (maxFFTSize) to avoid read/write
+  // overlap When latency == buffer size, circular buffer fails (read pos ==
+  // write pos)
+  constexpr int dryDelayBufferSize = maxFFTSize * 2;
+  dryDelayBufferL.setSize(1, dryDelayBufferSize);
+  dryDelayBufferR.setSize(1, dryDelayBufferSize);
   dryDelayBufferL.clear();
   dryDelayBufferR.clear();
   dryDelayWritePos = 0;
@@ -192,14 +196,21 @@ void DiffuseEngine::applyDiffuse(std::complex<float> *spectrum, int numBins,
           factor = t * t * (3.0f - 2.0f * t); // Smoothstep
         }
 
-        // Static hash: use golden ratio for pseudo-random distribution
-        // Different seed for left/right channel
-        const float gr = 0.618033988749895f;
-        int channelSeed = isLeftChannel ? 0 : 7919; // Prime offset
-        float hash =
-            std::fmod(static_cast<float>(bin + channelSeed) * gr, 1.0f);
+        // Integer hash function (Wang Hash) for chaotic per-bin distribution
+        // Adjacent bins will have completely uncorrelated delay times
+        auto intHash = [](uint32_t x) -> float {
+          x = ((x >> 16) ^ x) * 0x45d9f3b;
+          x = ((x >> 16) ^ x) * 0x45d9f3b;
+          x = (x >> 16) ^ x;
+          return static_cast<float>(x) / static_cast<float>(0xFFFFFFFF);
+        };
 
-        // Direct mapping: [0, D_max] - no negative values, full distribution
+        // Different seed offset for left/right channel stereo separation
+        uint32_t seed =
+            static_cast<uint32_t>(bin) + (isLeftChannel ? 0u : 0x9E3779B9u);
+        float hash = intHash(seed);
+
+        // Direct mapping: [0, D_max] with smooth transition near lowcut
         delayMs = hash * diffuseMaxMs * factor;
       }
     }
@@ -229,9 +240,12 @@ void DiffuseEngine::applyDiffuse(std::complex<float> *spectrum, int numBins,
         delayBuffer[binOffset + static_cast<size_t>(readPos)];
 
     // Apply decay: longer delay = lower volume (linear attenuation)
+    // Compensation: uniform hash distribution causes ~50% average loudness loss
+    // Apply 2x gain to compensate while preserving the decay effect
     if (decayEnabled.load() && diffuseMaxMs > 0.0f && delayMs > 0.0f) {
       float decayGain = 1.0f - (delayMs / diffuseMaxMs);
-      delayedSample *= decayGain;
+      constexpr float decayCompensation = 2.0f;
+      delayedSample *= decayGain * decayCompensation;
     }
 
     spectrum[bin] = delayedSample;

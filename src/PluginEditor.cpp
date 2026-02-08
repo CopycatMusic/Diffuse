@@ -34,7 +34,7 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
   diffuseSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false,
                                 UIConstants::kTextBoxWidth,
                                 UIConstants::kElementHeight);
-  diffuseSlider.setMouseDragSensitivity(100);
+  diffuseSlider.setMouseDragSensitivity(300);
   addAndMakeVisible(diffuseSlider);
   diffuseAttachment =
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
