@@ -1,0 +1,94 @@
+# Build directories
+build/
+cmake-build-*/
+out/
+
+# IDE / Editor
+.idea/
+.vscode/
+*.xcodeproj/
+*.xcworkspace/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Xcode
+DerivedData/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+*.xccheckout
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Visual Studio
+.vs/
+x64/
+x86/
+Debug/
+Release/
+*.pdb
+*.ilk
+*.obj
+*.lib
+*.exp
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+
+# JUCE
+JuceLibraryCode/
+Builds/
+*.component
+*.vst3
+*.vst
+*.aax
+*.aupreset
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Signing/Notarization artifacts
+*.dmg
+*.pkg
+*.zip
+
+# Output artifacts (keep in separate release folder)
+installer/output/
