@@ -22,7 +22,7 @@ void STFTProcessor::reset() {
 }
 
 void STFTProcessor::setFFTSize(int size) {
-  jassert(size >= 256 && size <= maxFftSize);
+  jassert(size >= 64 && size <= maxFftSize);
   jassert((size & (size - 1)) == 0); // Must be power of 2
 
   if (size != fftSize) {
@@ -33,6 +33,14 @@ void STFTProcessor::setFFTSize(int size) {
 
     // Select pre-allocated FFT object based on size
     switch (fftSize) {
+    case 64:
+      fft = fft64;
+      window = window64;
+      break;
+    case 128:
+      fft = fft128;
+      window = window128;
+      break;
     case 256:
       fft = fft256;
       window = window256;
@@ -92,12 +100,16 @@ void STFTProcessor::setOverlapFactor(int factor) {
 
 void STFTProcessor::initBuffers() {
   // Pre-allocate FFT objects for all supported sizes (done once)
+  fft64Owner = std::make_unique<juce::dsp::FFT>(6);    // 2^6 = 64
+  fft128Owner = std::make_unique<juce::dsp::FFT>(7);   // 2^7 = 128
   fft256Owner = std::make_unique<juce::dsp::FFT>(8);   // 2^8 = 256
   fft512Owner = std::make_unique<juce::dsp::FFT>(9);   // 2^9 = 512
   fft1024Owner = std::make_unique<juce::dsp::FFT>(10); // 2^10 = 1024
   fft2048Owner = std::make_unique<juce::dsp::FFT>(11); // 2^11 = 2048
   fft4096Owner = std::make_unique<juce::dsp::FFT>(12); // 2^12 = 4096
 
+  fft64 = fft64Owner.get();
+  fft128 = fft128Owner.get();
   fft256 = fft256Owner.get();
   fft512 = fft512Owner.get();
   fft1024 = fft1024Owner.get();
@@ -105,6 +117,10 @@ void STFTProcessor::initBuffers() {
   fft4096 = fft4096Owner.get();
 
   // Pre-allocate window functions for all supported sizes
+  window64Owner = std::make_unique<juce::dsp::WindowingFunction<float>>(
+      65, juce::dsp::WindowingFunction<float>::hann, false);
+  window128Owner = std::make_unique<juce::dsp::WindowingFunction<float>>(
+      129, juce::dsp::WindowingFunction<float>::hann, false);
   window256Owner = std::make_unique<juce::dsp::WindowingFunction<float>>(
       257, juce::dsp::WindowingFunction<float>::hann, false);
   window512Owner = std::make_unique<juce::dsp::WindowingFunction<float>>(
@@ -116,6 +132,8 @@ void STFTProcessor::initBuffers() {
   window4096Owner = std::make_unique<juce::dsp::WindowingFunction<float>>(
       4097, juce::dsp::WindowingFunction<float>::hann, false);
 
+  window64 = window64Owner.get();
+  window128 = window128Owner.get();
   window256 = window256Owner.get();
   window512 = window512Owner.get();
   window1024 = window1024Owner.get();

@@ -13,7 +13,7 @@ void DiffuseEngine::prepare(double sampleRate, int maxBlockSize) {
   // Pre-allocation sizing: maxFFTSize for bins, minFFTSize for hop (worst case
   // delay)
   constexpr int maxFFTSize = 4096;
-  constexpr int minFFTSize = 256;
+  constexpr int minFFTSize = 64;
   constexpr int maxNumBins = maxFFTSize / 2 + 1;
   constexpr int overlapFactor = 4;
   int minHopSize =
@@ -128,6 +128,9 @@ void DiffuseEngine::process(juce::AudioBuffer<float> &buffer) {
   dryDelayWritePos =
       (dryDelayWritePos + numSamples) % dryDelayBufferL.getNumSamples();
 
+  // Process audio
+  updateLFO(numSamples);
+
   // Process left/mono channel through STFT
   auto *leftIn = buffer.getReadPointer(0);
   auto *leftOut = buffer.getWritePointer(0);
@@ -233,10 +236,17 @@ void DiffuseEngine::applyDiffuse(std::complex<float> *spectrum, int numBins,
         // Different seed offset for left/right channel stereo separation
         uint32_t seed = static_cast<uint32_t>(bin) +
                         (isLeftChannel ? 0x243F6A88u : 0x9E3779B9u);
+        // Direct mapping: [0, D_max] with smooth transition near lowcut
         float hash = intHash(seed);
 
-        // Direct mapping: [0, D_max] with smooth transition near lowcut
-        delayMs = hash * diffuseMaxMs * factor;
+        // LFO Modulation: delayMs = hash * diffuseMaxMs * (1.0 + depth *
+        // sin(phase + binOffset))
+        float depth = modDepth.load() / 100.0f; // 0-1.0
+        double phase = isLeftChannel ? lfoPhaseL : lfoPhaseR;
+        float binOffset = static_cast<float>(bin) * 0.05f;
+        float lfo = std::sin(static_cast<float>(phase) + binOffset);
+
+        delayMs = hash * diffuseMaxMs * factor * (1.0f + depth * lfo);
       }
     }
 
@@ -355,4 +365,20 @@ void DiffuseEngine::setFFTSize(int size) {
 
 int DiffuseEngine::getLatencyInSamples() const {
   return stftProcessorL.getLatencyInSamples();
+}
+
+void DiffuseEngine::updateLFO(int numSamples) {
+  float rate = modRate.load();
+  double sr = currentSampleRate.load();
+
+  if (sr > 0.0) {
+    double phaseInc =
+        (2.0 * juce::MathConstants<double>::pi * rate * numSamples) / sr;
+    lfoPhaseL =
+        std::fmod(lfoPhaseL + phaseInc, 2.0 * juce::MathConstants<double>::pi);
+
+    // Subtle phase offset for right channel to enhance stereo
+    lfoPhaseR = std::fmod(lfoPhaseL + juce::MathConstants<double>::pi * 0.5,
+                          2.0 * juce::MathConstants<double>::pi);
+  }
 }

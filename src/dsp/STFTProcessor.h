@@ -56,6 +56,8 @@ private:
   juce::dsp::WindowingFunction<float> *window = nullptr;
 
   // Pre-allocated FFT objects for each supported size (owners)
+  std::unique_ptr<juce::dsp::FFT> fft64Owner;
+  std::unique_ptr<juce::dsp::FFT> fft128Owner;
   std::unique_ptr<juce::dsp::FFT> fft256Owner;
   std::unique_ptr<juce::dsp::FFT> fft512Owner;
   std::unique_ptr<juce::dsp::FFT> fft1024Owner;
@@ -63,6 +65,8 @@ private:
   std::unique_ptr<juce::dsp::FFT> fft4096Owner;
 
   // Pre-allocated window functions for each supported size (owners)
+  std::unique_ptr<juce::dsp::WindowingFunction<float>> window64Owner;
+  std::unique_ptr<juce::dsp::WindowingFunction<float>> window128Owner;
   std::unique_ptr<juce::dsp::WindowingFunction<float>> window256Owner;
   std::unique_ptr<juce::dsp::WindowingFunction<float>> window512Owner;
   std::unique_ptr<juce::dsp::WindowingFunction<float>> window1024Owner;
@@ -70,11 +74,15 @@ private:
   std::unique_ptr<juce::dsp::WindowingFunction<float>> window4096Owner;
 
   // Raw pointers for quick access
+  juce::dsp::FFT *fft64 = nullptr;
+  juce::dsp::FFT *fft128 = nullptr;
   juce::dsp::FFT *fft256 = nullptr;
   juce::dsp::FFT *fft512 = nullptr;
   juce::dsp::FFT *fft1024 = nullptr;
   juce::dsp::FFT *fft2048 = nullptr;
   juce::dsp::FFT *fft4096 = nullptr;
+  juce::dsp::WindowingFunction<float> *window64 = nullptr;
+  juce::dsp::WindowingFunction<float> *window128 = nullptr;
   juce::dsp::WindowingFunction<float> *window256 = nullptr;
   juce::dsp::WindowingFunction<float> *window512 = nullptr;
   juce::dsp::WindowingFunction<float> *window1024 = nullptr;

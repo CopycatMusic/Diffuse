@@ -21,17 +21,29 @@ CopycatDiffuseProcessor::createParameterLayout() {
       juce::NormalisableRange<float>(0.0f, 2000.0f, 0.1f, 0.5f), 0.0f,
       juce::AudioParameterFloatAttributes().withLabel("ms")));
 
-  // Low Cut (20-2000Hz, default 400Hz, skew 0.5)
+  // Cutoff (20-2000Hz, default 400Hz, skew 0.5)
   params.push_back(std::make_unique<juce::AudioParameterFloat>(
-      juce::ParameterID{"lowcut", 1}, "Low Cut",
+      juce::ParameterID{"lowcut", 1}, "Cutoff",
       juce::NormalisableRange<float>(20.0f, 2000.0f, 1.0f, 0.5f), 400.0f,
       juce::AudioParameterFloatAttributes().withLabel("Hz")));
 
-  // FFT Size (5-level choice: 256, 512, 1024, 2048, 4096)
+  // LFO Rate (Fixed at 0.2Hz)
+  params.push_back(std::make_unique<juce::AudioParameterFloat>(
+      juce::ParameterID{"modrate", 1}, "LFO Rate",
+      juce::NormalisableRange<float>(0.01f, 1.0f, 0.01f, 0.5f), 0.2f,
+      juce::AudioParameterFloatAttributes().withLabel("Hz")));
+
+  // LFO Depth (Fixed at 5%)
+  params.push_back(std::make_unique<juce::AudioParameterFloat>(
+      juce::ParameterID{"moddepth", 1}, "LFO Depth",
+      juce::NormalisableRange<float>(0.0f, 5.0f, 0.1f), 5.0f,
+      juce::AudioParameterFloatAttributes().withLabel("%")));
+
+  // FFT Size (7-level choice: 64, 128, 256, 512, 1024, 2048, 4096)
   params.push_back(std::make_unique<juce::AudioParameterChoice>(
       juce::ParameterID{"fftsize", 1}, "FFT Size",
-      juce::StringArray{"256", "512", "1024", "2048", "4096"},
-      2 // Default: 1024 (index 2)
+      juce::StringArray{"64", "128", "256", "512", "1024", "2048", "4096"},
+      4 // Default: 1024 (index 4)
       ));
 
   // Decay toggle
@@ -67,7 +79,7 @@ void CopycatDiffuseProcessor::prepareToPlay(double sampleRate,
   auto *fftParam = parameters.getRawParameterValue("fftsize");
   if (fftParam) {
     int fftIndex = static_cast<int>(fftParam->load());
-    int fftSizes[] = {256, 512, 1024, 2048, 4096};
+    int fftSizes[] = {64, 128, 256, 512, 1024, 2048, 4096};
     engine.setFFTSize(fftSizes[fftIndex]);
   }
 
@@ -106,7 +118,7 @@ void CopycatDiffuseProcessor::processBlock(juce::AudioBuffer<float> &buffer,
 
   if (fftsizeParam) {
     int fftIndex = static_cast<int>(fftsizeParam->load());
-    int fftSizes[] = {256, 512, 1024, 2048, 4096};
+    int fftSizes[] = {64, 128, 256, 512, 1024, 2048, 4096};
     int newFFTSize = fftSizes[fftIndex];
 
     if (newFFTSize != engine.getFFTSize()) {
@@ -133,6 +145,16 @@ void CopycatDiffuseProcessor::processBlock(juce::AudioBuffer<float> &buffer,
   auto *feedbackParam = parameters.getRawParameterValue("feedback");
   if (feedbackParam) {
     engine.setFeedback(feedbackParam->load() / 100.0f); // Convert % to 0-0.95
+  }
+
+  auto *modRateParam = parameters.getRawParameterValue("modrate");
+  if (modRateParam) {
+    engine.setModRate(modRateParam->load());
+  }
+
+  auto *modDepthParam = parameters.getRawParameterValue("moddepth");
+  if (modDepthParam) {
+    engine.setModDepth(modDepthParam->load());
   }
 
   // Process audio

@@ -27,10 +27,10 @@ private:
   std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
       diffuseAttachment;
 
-  juce::Slider lowcutSlider;
-  juce::Label lowcutLabel;
+  juce::Slider cutoffSlider;
+  juce::Label cutoffLabel;
   std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
-      lowcutAttachment;
+      cutoffAttachment;
 
   // FFT Size Knob (3-level: Low/Medium/High)
   juce::Slider fftSizeSlider;

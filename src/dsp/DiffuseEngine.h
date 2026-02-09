@@ -70,6 +70,18 @@ public:
   void setFFTSize(int size);
   int getFFTSize() const { return currentFFTSize.load(); }
 
+  /**
+   * Set LFO modulation rate in Hz (0.1-10Hz).
+   */
+  void setModRate(float rate) { modRate = rate; }
+  float getModRate() const { return modRate.load(); }
+
+  /**
+   * Set LFO modulation depth as percentage (0-100%).
+   */
+  void setModDepth(float depth) { modDepth = depth; }
+  float getModDepth() const { return modDepth.load(); }
+
   //==========================================================================
   // Info
 
@@ -96,12 +108,20 @@ private:
   std::atomic<float> feedbackAmount{0.0f};  // 0.0-0.95 feedback mix
 
 private:
+  void updateLFO(int numSamples);
+
   // Per-bin delay buffers (flattened for cache locality)
   std::vector<std::complex<float>> delayBufferL;
   std::vector<std::complex<float>> delayBufferR;
   std::vector<int> delayWritePosL;
   std::vector<int> delayWritePosR;
   int maxDelaySamples = 0;
+
+  // LFO state
+  double lfoPhaseL = 0.0;
+  double lfoPhaseR = 0.0;
+  std::atomic<float> modRate{1.0f};  // Hz
+  std::atomic<float> modDepth{0.0f}; // Percentage 0-100
 
   // Previous frame spectrum for frequency-domain feedback
   std::vector<std::complex<float>> prevSpectrumL;
