@@ -34,6 +34,7 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
   diffuseSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false,
                                 UIConstants::kTextBoxWidth,
                                 UIConstants::kElementHeight);
+  diffuseSlider.setTextValueSuffix("ms");
   diffuseSlider.setMouseDragSensitivity(300);
   addAndMakeVisible(diffuseSlider);
   diffuseAttachment =
@@ -51,6 +52,7 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
   cutoffSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false,
                                UIConstants::kTextBoxWidth,
                                UIConstants::kElementHeight);
+  cutoffSlider.setTextValueSuffix("Hz");
   cutoffSlider.setMouseDragSensitivity(150);
   addAndMakeVisible(cutoffSlider);
   cutoffAttachment =
@@ -79,6 +81,7 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
   feedbackSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false,
                                  UIConstants::kTextBoxWidth,
                                  UIConstants::kElementHeight);
+  feedbackSlider.setTextValueSuffix("%");
   feedbackSlider.setMouseDragSensitivity(150);
   addAndMakeVisible(feedbackSlider);
   feedbackAttachment =
@@ -115,6 +118,7 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
   mixSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false,
                             UIConstants::kTextBoxWidth,
                             UIConstants::kElementHeight);
+  mixSlider.setTextValueSuffix("%");
   mixSlider.setMouseDragSensitivity(150);
   addAndMakeVisible(mixSlider);
   mixAttachment =
@@ -132,6 +136,7 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
   gainSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false,
                              UIConstants::kTextBoxWidth,
                              UIConstants::kElementHeight);
+  gainSlider.setTextValueSuffix("dB");
   gainSlider.setMouseDragSensitivity(150);
   addAndMakeVisible(gainSlider);
   gainAttachment =
@@ -143,6 +148,52 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
   gainLabel.setColour(juce::Label::textColourId,
                       CustomLookAndFeel::getTextPrimary());
   addAndMakeVisible(gainLabel);
+
+  // LFO Rate Knob
+  modRateSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+  modRateSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false,
+                                UIConstants::kTextBoxWidth,
+                                UIConstants::kElementHeight);
+  modRateSlider.setTextValueSuffix("Hz");
+  modRateSlider.setMouseDragSensitivity(150);
+  addAndMakeVisible(modRateSlider);
+  modRateAttachment =
+      std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+          processorRef.getParameters(), "modrate", modRateSlider);
+
+  modRateLabel.setText("Rate", juce::dontSendNotification);
+  modRateLabel.setJustificationType(juce::Justification::centred);
+  modRateLabel.setColour(juce::Label::textColourId,
+                         CustomLookAndFeel::getTextPrimary());
+  addAndMakeVisible(modRateLabel);
+
+  // LFO Depth Knob
+  modDepthSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+  modDepthSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false,
+                                 UIConstants::kTextBoxWidth,
+                                 UIConstants::kElementHeight);
+  modDepthSlider.setTextValueSuffix("%");
+  modDepthSlider.setMouseDragSensitivity(150);
+  addAndMakeVisible(modDepthSlider);
+  modDepthAttachment =
+      std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+          processorRef.getParameters(), "moddepth", modDepthSlider);
+
+  // LFO Header
+  lfoHeaderLabel.setText(
+      juce::CharPointer_UTF8("\xe2\x80\x94\xe2\x80\x94\xe2\x80\x94 LFO "
+                             "\xe2\x80\x94\xe2\x80\x94\xe2\x80\x94"),
+      juce::dontSendNotification);
+  lfoHeaderLabel.setJustificationType(juce::Justification::centred);
+  lfoHeaderLabel.setColour(juce::Label::textColourId,
+                           CustomLookAndFeel::getTextSecondary());
+  addAndMakeVisible(lfoHeaderLabel);
+
+  modDepthLabel.setText("Depth", juce::dontSendNotification);
+  modDepthLabel.setJustificationType(juce::Justification::centred);
+  modDepthLabel.setColour(juce::Label::textColourId,
+                          CustomLookAndFeel::getTextPrimary());
+  addAndMakeVisible(modDepthLabel);
 
   setSize(UIConstants::kWindowWidth, UIConstants::kWindowHeight);
 }
@@ -200,7 +251,7 @@ void CopycatDiffuseEditor::resized() {
   int y = UIConstants::kTitleBarHeight + margin;
 
   // ===== Row 1: Diffuse (Large) + Feedback (Medium) side by side =====
-  int topRowItemGap = UIConstants::kBottomItemGap;
+  int topRowItemGap = UIConstants::kKnobHGap;
   int totalTopRowWidth = largeKnob + topRowItemGap + mediumKnob;
   int topRowStartX = (width - totalTopRowWidth) / 2;
 
@@ -233,18 +284,49 @@ void CopycatDiffuseEditor::resized() {
   y += UIConstants::kElementHeight + UIConstants::kSubGap +
        diffuseKnobHeightWithText + UIConstants::kMainGap;
 
-  // ===== Row 2: Cutoff (Centered) =====
+  // ===== Row 2: Rate, Depth, and Cutoff (Standardized 60px width) =====
+  int row2CompWidth = 60;
+  int row2SmallKnob = UIConstants::kSmallKnob;
+  int row2MiniKnob = UIConstants::kMiniKnob;
+  int row2Gap = UIConstants::kKnobHGap;
+  // No gap between Rate and Depth: Total = (Rate + Depth) + Gap + Cutoff
+  int totalRow2Width = (row2CompWidth * 2) + row2Gap + row2CompWidth;
+  int row2StartX = (width - totalRow2Width) / 2;
+
   int row2KnobHeightWithText =
-      smallKnob + UIConstants::kElementHeight + UIConstants::kSubGap;
+      row2SmallKnob + UIConstants::kElementHeight + UIConstants::kSubGap;
+  int miniKnobHeightWithText =
+      row2MiniKnob + UIConstants::kElementHeight + UIConstants::kSubGap;
 
-  int cutoffX = (width - smallKnob) / 2;
-  cutoffLabel.setBounds(cutoffX, y, smallKnob, UIConstants::kElementHeight);
-  cutoffSlider.setBounds(cutoffX,
-                         y + UIConstants::kElementHeight + UIConstants::kSubGap,
-                         smallKnob, row2KnobHeightWithText);
+  // 1. Headers (Top Align)
+  // LFO Header spans both Rate and Depth (no internal gap)
+  int lfoHeaderWidth = row2CompWidth * 2;
+  lfoHeaderLabel.setBounds(row2StartX, y, lfoHeaderWidth,
+                           UIConstants::kElementHeight);
 
-  y += UIConstants::kElementHeight + UIConstants::kSubGap +
-       row2KnobHeightWithText + UIConstants::kMainGap;
+  // Cutoff Label aligns with LFO Header
+  int cutoffX = row2StartX + lfoHeaderWidth + row2Gap;
+  cutoffLabel.setBounds(cutoffX, y, row2CompWidth, UIConstants::kElementHeight);
+
+  // 2. Parameter Labels (LFO only)
+  int labelY = y + UIConstants::kElementHeight + UIConstants::kSubGap;
+  modRateLabel.setBounds(row2StartX, labelY, row2CompWidth,
+                         UIConstants::kElementHeight);
+  modDepthLabel.setBounds(row2StartX + row2CompWidth, labelY, row2CompWidth,
+                          UIConstants::kElementHeight);
+
+  // 3. Sliders (Bottom Align / Height Match)
+  int sliderY = labelY + UIConstants::kElementHeight + UIConstants::kSubGap;
+  modRateSlider.setBounds(row2StartX, sliderY, row2CompWidth,
+                          miniKnobHeightWithText);
+  modDepthSlider.setBounds(row2StartX + row2CompWidth, sliderY, row2CompWidth,
+                           miniKnobHeightWithText);
+
+  int cutoffSliderY = y + UIConstants::kElementHeight + 4; // Matches total 91h
+  cutoffSlider.setBounds(cutoffX, cutoffSliderY, row2CompWidth,
+                         row2KnobHeightWithText);
+
+  y += 91 + UIConstants::kMainGap;
 
   // ===== Row 3: Decay button (centered) =====
   int buttonWidth = UIConstants::kButtonWidth;
@@ -261,7 +343,7 @@ void CopycatDiffuseEditor::resized() {
   // ===== Section 2: FFT Size + Mix + Gain (3 knobs side-by-side, centered)
   // =====
   int itemWidth = UIConstants::kSmallKnob;
-  int itemGap = UIConstants::kBottomItemGap;
+  int itemGap = UIConstants::kKnobHGap;
   int totalBottomWidth = (itemWidth * 3) + (itemGap * 2);
   int startX = (width - totalBottomWidth) / 2;
 

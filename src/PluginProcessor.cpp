@@ -33,10 +33,10 @@ CopycatDiffuseProcessor::createParameterLayout() {
       juce::NormalisableRange<float>(0.01f, 1.0f, 0.01f, 0.5f), 0.2f,
       juce::AudioParameterFloatAttributes().withLabel("Hz")));
 
-  // LFO Depth (Fixed at 5%)
+  // LFO Depth (0-10%)
   params.push_back(std::make_unique<juce::AudioParameterFloat>(
       juce::ParameterID{"moddepth", 1}, "LFO Depth",
-      juce::NormalisableRange<float>(0.0f, 5.0f, 0.1f), 5.0f,
+      juce::NormalisableRange<float>(0.0f, 10.0f, 0.1f), 5.0f,
       juce::AudioParameterFloatAttributes().withLabel("%")));
 
   // FFT Size (7-level choice: 64, 128, 256, 512, 1024, 2048, 4096)
@@ -61,6 +61,11 @@ CopycatDiffuseProcessor::createParameterLayout() {
       juce::ParameterID{"mix", 1}, "Mix",
       juce::NormalisableRange<float>(0.0f, 100.0f, 0.1f), 100.0f,
       juce::AudioParameterFloatAttributes().withLabel("%")));
+
+  // Grain (1x, 2x, 4x)
+  params.push_back(std::make_unique<juce::AudioParameterChoice>(
+      juce::ParameterID{"grain", 1}, "Grain",
+      juce::StringArray{"1x", "2x", "4x"}, 0));
 
   // Output Gain (-6 to +6 dB, default 0 dB)
   params.push_back(std::make_unique<juce::AudioParameterFloat>(

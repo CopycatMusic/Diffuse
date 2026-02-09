@@ -61,6 +61,19 @@ private:
   std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
       gainAttachment;
 
+  // LFO (Mod) Knobs
+  juce::Slider modRateSlider;
+  juce::Label modRateLabel;
+  std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
+      modRateAttachment;
+
+  juce::Slider modDepthSlider;
+  juce::Label modDepthLabel;
+  std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
+      modDepthAttachment;
+
+  juce::Label lfoHeaderLabel;
+
   // Separator line position (calculated in resized)
   int separatorLineY = 0;
 

@@ -16,9 +16,11 @@ CustomLookAndFeel::CustomLookAndFeel() {
   setColour(juce::Slider::thumbColourId, accentPrimary);
   setColour(juce::Slider::trackColourId, accentPrimary.withAlpha(0.3f));
   setColour(juce::Slider::backgroundColourId, backgroundMedium);
-  setColour(juce::Slider::textBoxTextColourId, textPrimary);
-  setColour(juce::Slider::textBoxBackgroundColourId, backgroundDark);
-  setColour(juce::Slider::textBoxOutlineColourId, getTextBoxOutline());
+  setColour(juce::Slider::textBoxTextColourId, textSecondary);
+  setColour(juce::Slider::textBoxBackgroundColourId,
+            juce::Colours::transparentBlack);
+  setColour(juce::Slider::textBoxOutlineColourId,
+            juce::Colours::transparentBlack);
 
   setColour(juce::TextButton::buttonColourId, backgroundMedium);
   setColour(juce::TextButton::buttonOnColourId, accentPrimary);
@@ -200,7 +202,8 @@ void CustomLookAndFeel::drawButtonBackground(
     juce::Graphics &g, juce::Button &button,
     const juce::Colour &backgroundColour, bool shouldDrawButtonAsHighlighted,
     bool shouldDrawButtonAsDown) {
-  auto bounds = button.getLocalBounds().toFloat().reduced(0.5f);
+  auto bounds = button.getLocalBounds().toFloat().reduced(
+      UIConstants::kBorderWidth / 2.0f);
 
   auto baseColour = button.getToggleState()
                         ? button.findColour(juce::TextButton::buttonOnColourId)
@@ -220,7 +223,7 @@ void CustomLookAndFeel::drawButtonBackground(
     g.setColour(
         button.findColour(juce::TextButton::buttonOnColourId).withAlpha(0.2f));
 
-  g.drawRoundedRectangle(bounds, 6.0f, 1.0f);
+  g.drawRoundedRectangle(bounds, 6.0f, UIConstants::kBorderWidth);
 }
 
 void CustomLookAndFeel::drawButtonText(juce::Graphics &g,
@@ -247,14 +250,15 @@ void CustomLookAndFeel::drawComboBox(juce::Graphics &g, int width, int height,
                                      bool isButtonDown, int buttonX,
                                      int buttonY, int buttonW, int buttonH,
                                      juce::ComboBox &box) {
-  auto bounds =
-      juce::Rectangle<int>(0, 0, width, height).toFloat().reduced(0.5f);
+  auto bounds = juce::Rectangle<int>(0, 0, width, height)
+                    .toFloat()
+                    .reduced(UIConstants::kBorderWidth / 2.0f);
 
   g.setColour(backgroundMedium);
   g.fillRoundedRectangle(bounds, 6.0f);
 
   g.setColour(textPrimary.withAlpha(0.2f));
-  g.drawRoundedRectangle(bounds, 6.0f, 1.0f);
+  g.drawRoundedRectangle(bounds, 6.0f, UIConstants::kBorderWidth);
 
   // Arrow
   juce::Path arrow;

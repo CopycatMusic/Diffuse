@@ -46,6 +46,12 @@ public:
   float getMix() const { return mix.load(); }
 
   /**
+   * Set grain mode (0: 1x, 1: 2x, 2: 4x).
+   */
+  void setGrainMode(int mode) { grainMode = juce::jlimit(0, 2, mode); }
+  int getGrainMode() const { return grainMode.load(); }
+
+  /**
    * Set output gain in decibels.
    */
   void setGain(float decibels) {
@@ -106,6 +112,7 @@ private:
   std::atomic<float> mix{1.0f};             // 0.0 = dry, 1.0 = wet
   std::atomic<float> outputGain{1.0f};      // Multiplier (default 0dB = 1.0)
   std::atomic<float> feedbackAmount{0.0f};  // 0.0-0.95 feedback mix
+  std::atomic<int> grainMode{0};            // 0: 1x, 1: 2x, 2: 4x
 
 private:
   void updateLFO(int numSamples);

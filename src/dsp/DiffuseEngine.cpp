@@ -91,47 +91,41 @@ void DiffuseEngine::process(juce::AudioBuffer<float> &buffer) {
     return;
 
   float mixAmount = mix.load();
-
-  // If fully dry, skip processing entirely
-  if (mixAmount <= 0.0f)
-    return;
-
-  // Save dry signal for mixing (must be delayed to match wet signal latency)
-  juce::AudioBuffer<float> dryBuffer;
   int latency = getLatencyInSamples();
 
-  if (mixAmount < 1.0f) {
-    dryBuffer.setSize(numChannels, numSamples);
+  // Save dry signal for mixing (MUST be delayed to match wet signal latency)
+  // We process this ALWAYS to keep the dry delay line and write pointers in
+  // sync
+  juce::AudioBuffer<float> dryBuffer(numChannels, numSamples);
 
-    for (int ch = 0; ch < numChannels; ++ch) {
-      auto *in = buffer.getReadPointer(ch);
-      auto *outDelayed = dryBuffer.getWritePointer(ch);
-      auto *delayData = (ch == 0) ? dryDelayBufferL.getWritePointer(0)
-                                  : dryDelayBufferR.getWritePointer(0);
-      int delaySize = dryDelayBufferL.getNumSamples();
+  for (int ch = 0; ch < numChannels; ++ch) {
+    auto *in = buffer.getReadPointer(ch);
+    auto *outDelayed = dryBuffer.getWritePointer(ch);
+    auto *delayData = (ch == 0) ? dryDelayBufferL.getWritePointer(0)
+                                : dryDelayBufferR.getWritePointer(0);
+    int delaySize = dryDelayBufferL.getNumSamples();
 
-      for (int i = 0; i < numSamples; ++i) {
-        // Store current input in delay line
-        int wp = (dryDelayWritePos + i) % delaySize;
-        delayData[wp] = in[i];
+    for (int i = 0; i < numSamples; ++i) {
+      // Store current input in delay line
+      int wp = (dryDelayWritePos + i) % delaySize;
+      delayData[wp] = in[i];
 
-        // Read delayed sample (circular buffer)
-        // Latency is the offset: Read from (wp - latency)
-        int rp = (wp - latency + delaySize) % delaySize;
-        outDelayed[i] = delayData[rp];
-      }
+      // Read delayed sample (circular buffer)
+      // Latency is the offset: Read from (wp - latency)
+      int rp = (wp - latency + delaySize) % delaySize;
+      outDelayed[i] = delayData[rp];
     }
   }
 
-  // Update write position for next block (only once after all channels
-  // processed)
+  // Update write position for next block
   dryDelayWritePos =
       (dryDelayWritePos + numSamples) % dryDelayBufferL.getNumSamples();
 
-  // Process audio
+  // Process audio modulation
   updateLFO(numSamples);
 
-  // Process left/mono channel through STFT
+  // Process through STFT ALWAYS to keep feedback and overlap-add state
+  // continuous Left/mono channel
   auto *leftIn = buffer.getReadPointer(0);
   auto *leftOut = buffer.getWritePointer(0);
 
@@ -141,7 +135,7 @@ void DiffuseEngine::process(juce::AudioBuffer<float> &buffer) {
                                         delayWritePosL, true);
                          });
 
-  // Process right channel if stereo
+  // Right channel
   if (numChannels >= 2) {
     auto *rightIn = buffer.getReadPointer(1);
     auto *rightOut = buffer.getWritePointer(1);
@@ -153,23 +147,16 @@ void DiffuseEngine::process(juce::AudioBuffer<float> &buffer) {
                            });
   }
 
-  // Apply dry/wet mix if not fully wet
-  if (mixAmount < 1.0f) {
-    float dryGain = 1.0f - mixAmount;
-    float wetGain = mixAmount;
+  // Apply dry/wet mix and output gain
+  float dryGain = 1.0f - mixAmount;
+  float wetGain = mixAmount;
+  float outG = outputGain.load();
 
-    for (int ch = 0; ch < numChannels; ++ch) {
-      auto *wet = buffer.getWritePointer(ch);
-      auto *dry = dryBuffer.getReadPointer(ch);
-      for (int i = 0; i < numSamples; ++i) {
-        wet[i] = (dry[i] * dryGain + wet[i] * wetGain) * outputGain.load();
-      }
-    }
-  } else {
-    // If 100% wet, still apply output gain
-    float g = outputGain.load();
-    if (g != 1.0f) {
-      buffer.applyGain(g);
+  for (int ch = 0; ch < numChannels; ++ch) {
+    auto *wet = buffer.getWritePointer(ch);
+    auto *dry = dryBuffer.getReadPointer(ch);
+    for (int i = 0; i < numSamples; ++i) {
+      wet[i] = (dry[i] * dryGain + wet[i] * wetGain) * outG;
     }
   }
 }
