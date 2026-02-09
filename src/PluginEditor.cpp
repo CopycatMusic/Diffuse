@@ -6,25 +6,26 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
     : AudioProcessorEditor(&p), processorRef(p) {
   setLookAndFeel(&customLookAndFeel);
 
-  // Load embedded Montserrat Bold font
-  auto montserratTypeface = juce::Typeface::createSystemTypefaceFor(
+  // Load embedded Montserrat fonts
+  auto boldTypeface = juce::Typeface::createSystemTypefaceFor(
       BinaryData::MontserratBold_ttf, BinaryData::MontserratBold_ttfSize);
-  titleFont =
-      juce::Font(montserratTypeface).withHeight(UIConstants::kTitleFontSize);
+  titleFont = juce::Font(boldTypeface).withHeight(UIConstants::kTitleFontSize);
 
-  // ===== Title Bar: Two-tone labels =====
-  brandLabel.setText("COPYCAT", juce::dontSendNotification);
-  brandLabel.setFont(titleFont);
-  brandLabel.setColour(juce::Label::textColourId,
-                       CustomLookAndFeel::getTextPrimary());
-  brandLabel.setJustificationType(juce::Justification::centredRight);
-  addAndMakeVisible(brandLabel);
+  auto mediumTypeface = juce::Typeface::createSystemTypefaceFor(
+      BinaryData::MontserratMedium_ttf, BinaryData::MontserratMedium_ttfSize);
+  defaultFont =
+      juce::Font(mediumTypeface).withHeight(UIConstants::kDefaultFontSize);
 
+  // Set default font for all UI components via LookAndFeel
+  customLookAndFeel.setDefaultFont(defaultFont);
+
+  // ===== Title Bar: Single white label =====
+  titleLabel.setName("Title");
+  titleLabel.getProperties().set("isTitle", true);
   titleLabel.setText("DIFFUSE", juce::dontSendNotification);
   titleLabel.setFont(titleFont);
-  titleLabel.setColour(juce::Label::textColourId,
-                       CustomLookAndFeel::getTextSecondary());
-  titleLabel.setJustificationType(juce::Justification::centredLeft);
+  titleLabel.setColour(juce::Label::textColourId, juce::Colours::white);
+  titleLabel.setJustificationType(juce::Justification::centred);
   addAndMakeVisible(titleLabel);
 
   // ===== Section 1: Diffuse + LowCut + Decay =====
@@ -236,23 +237,13 @@ void CopycatDiffuseEditor::resized() {
   // ===== Title Bar =====
   auto titleArea = bounds.removeFromTop(UIConstants::kTitleBarHeight);
 
-  // Calculate widths to center the combined title
-  int brandWidth = 140;
-  int diffuseWidth = 140;
-  int totalTitleWidth = brandWidth + UIConstants::kTitleGap + diffuseWidth;
-
-  int titleStartX = (titleArea.getWidth() - totalTitleWidth) / 2;
-
-  brandLabel.setBounds(titleStartX, 0, brandWidth,
-                       UIConstants::kTitleBarHeight);
-  titleLabel.setBounds(titleStartX + brandWidth + UIConstants::kTitleGap, 0,
-                       diffuseWidth, UIConstants::kTitleBarHeight);
+  titleLabel.setBounds(titleArea);
 
   int y = UIConstants::kTitleBarHeight + margin;
 
-  // ===== Row 1: Diffuse (Large) + Feedback (Medium) side by side =====
+  // ===== Row 1: Diffuse (Large) + Feedback (Large) side by side =====
   int topRowItemGap = UIConstants::kKnobHGap;
-  int totalTopRowWidth = largeKnob + topRowItemGap + mediumKnob;
+  int totalTopRowWidth = largeKnob + topRowItemGap + largeKnob;
   int topRowStartX = (width - totalTopRowWidth) / 2;
 
   // Common Y-offset for labels
@@ -260,29 +251,24 @@ void CopycatDiffuseEditor::resized() {
 
   // Diffuse - Left (Large Knob)
   int diffuseKnobY = y + UIConstants::kElementHeight + UIConstants::kSubGap;
-  int diffuseKnobHeightWithText =
+  int topRowKnobHeightWithText =
       largeKnob + UIConstants::kElementHeight + UIConstants::kSubGap;
 
   int diffuseX = topRowStartX;
   diffuseLabel.setBounds(diffuseX, topRowLabelY, largeKnob,
                          UIConstants::kElementHeight);
   diffuseSlider.setBounds(diffuseX, diffuseKnobY, largeKnob,
-                          diffuseKnobHeightWithText);
+                          topRowKnobHeightWithText);
 
-  // Feedback - Right (Medium Knob, vertically centered with Diffuse)
-  int feedbackKnobHeightWithText =
-      mediumKnob + UIConstants::kElementHeight + UIConstants::kSubGap;
-  int feedbackVerticalOffset =
-      (diffuseKnobHeightWithText - feedbackKnobHeightWithText) / 2;
-
+  // Feedback - Right (Large Knob)
   int feedbackX = diffuseX + largeKnob + topRowItemGap;
-  feedbackLabel.setBounds(feedbackX, topRowLabelY, mediumKnob,
+  feedbackLabel.setBounds(feedbackX, topRowLabelY, largeKnob,
                           UIConstants::kElementHeight);
-  feedbackSlider.setBounds(feedbackX, diffuseKnobY + feedbackVerticalOffset,
-                           mediumKnob, feedbackKnobHeightWithText);
+  feedbackSlider.setBounds(feedbackX, diffuseKnobY, largeKnob,
+                           topRowKnobHeightWithText);
 
   y += UIConstants::kElementHeight + UIConstants::kSubGap +
-       diffuseKnobHeightWithText + UIConstants::kMainGap;
+       topRowKnobHeightWithText + UIConstants::kMainGap;
 
   // ===== Row 2: Rate, Depth, and Cutoff (Standardized 60px width) =====
   int row2CompWidth = 60;

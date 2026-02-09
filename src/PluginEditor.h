@@ -16,10 +16,10 @@ private:
   CopycatDiffuseProcessor &processorRef;
   CustomLookAndFeel customLookAndFeel;
 
-  // Title labels (two-tone: "COPYCAT" + "DIFFUSE")
-  juce::Label brandLabel;
+  // Header
   juce::Label titleLabel;
   juce::Font titleFont;
+  juce::Font defaultFont;
 
   // Knobs
   juce::Slider diffuseSlider;

@@ -37,7 +37,9 @@ CustomLookAndFeel::CustomLookAndFeel() {
   setColour(juce::PopupMenu::highlightedBackgroundColourId, accentPrimary);
   setColour(juce::PopupMenu::highlightedTextColourId, backgroundDark);
 
-  setColour(juce::Label::textColourId, textPrimary);
+  setColour(juce::Label::textColourId, textSecondary);
+  setColour(juce::Label::outlineColourId, juce::Colours::transparentBlack);
+  setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentBlack);
 }
 
 CustomLookAndFeel::~CustomLookAndFeel() {}
@@ -230,8 +232,7 @@ void CustomLookAndFeel::drawButtonText(juce::Graphics &g,
                                        juce::TextButton &button,
                                        bool shouldDrawButtonAsHighlighted,
                                        bool shouldDrawButtonAsDown) {
-  auto font = juce::Font(UIConstants::kDefaultFontSize);
-  g.setFont(font);
+  g.setFont(defaultFont);
 
   auto textColour = button.getToggleState()
                         ? button.findColour(juce::TextButton::textColourOnId)
@@ -296,7 +297,7 @@ void CustomLookAndFeel::drawPopupMenuItem(
 
     r.reduce(juce::jmin(5, area.getWidth() / 20), 0);
 
-    auto font = juce::Font(UIConstants::kDefaultFontSize);
+    auto font = defaultFont;
     auto maxFontHeight = r.getHeight() / 1.3f;
 
     if (font.getHeight() > maxFontHeight)
@@ -313,4 +314,30 @@ void CustomLookAndFeel::drawPopupMenuItem(
 
     g.drawFittedText(text, r, juce::Justification::centredLeft, 1);
   }
+}
+
+//==============================================================================
+void CustomLookAndFeel::drawLabel(juce::Graphics &g, juce::Label &label) {
+  g.fillAll(label.findColour(juce::Label::backgroundColourId));
+
+  if (!label.isBeingEdited()) {
+    auto font = getLabelFont(label);
+    g.setFont(font);
+
+    auto textArea =
+        getLabelBorderSize(label).subtractedFrom(label.getLocalBounds());
+
+    g.setColour(label.findColour(juce::Label::textColourId));
+    g.drawFittedText(label.getText(), textArea, label.getJustificationType(),
+                     juce::jmax(1, (int)(label.getHeight() / font.getHeight())),
+                     label.getMinimumHorizontalScale());
+
+    // Skip drawing the border outline - this is what removes the rectangular
+    // line
+  }
+}
+
+void CustomLookAndFeel::drawTextEditorOutline(juce::Graphics &, int, int,
+                                              juce::TextEditor &) {
+  // Do nothing to avoid drawing any borders around text editors
 }

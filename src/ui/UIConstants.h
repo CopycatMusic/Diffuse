@@ -6,8 +6,8 @@
 namespace UIConstants {
 
 // ===== Window Dimensions =====
-constexpr int kWindowWidth = 300;
-constexpr int kWindowHeight = 450;
+constexpr int kWindowWidth = 280;
+constexpr int kWindowHeight = 440;
 constexpr int kTitleBarHeight = 40;
 constexpr int kTitleGap = 0;
 
@@ -32,11 +32,11 @@ constexpr int kMiniKnob = 40;
 constexpr int kKnobHGap = 20;
 
 // ===== Component Specifics =====
-constexpr int kButtonWidth = 90;
+constexpr int kButtonWidth = 120;
 constexpr float kBorderWidth = 2.0f;
 
 // ===== Font Sizes =====
 constexpr float kTitleFontSize = 32.0f;
-constexpr float kDefaultFontSize = 14.0f; // Buttons, knob text, general UI
+constexpr float kDefaultFontSize = 16.0f; // Buttons, knob text, general UI
 
 } // namespace UIConstants

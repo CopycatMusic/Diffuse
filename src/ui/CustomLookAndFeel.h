@@ -70,6 +70,24 @@ public:
 
   juce::Slider::SliderLayout getSliderLayout(juce::Slider &slider) override;
 
+  // Label & TextEditor
+  void drawLabel(juce::Graphics &g, juce::Label &label) override;
+  void drawTextEditorOutline(juce::Graphics &g, int width, int height,
+                             juce::TextEditor &textEditor) override;
+
+  // Font Management
+  void setDefaultFont(const juce::Font &font) { defaultFont = font; }
+  juce::Font getLabelFont(juce::Label &label) override {
+    if (label.getProperties().contains("isTitle"))
+      return label.getFont();
+    return defaultFont;
+  }
+  juce::Font getComboBoxFont(juce::ComboBox &) override { return defaultFont; }
+  juce::Font getTextButtonFont(juce::TextButton &, int) override {
+    return defaultFont;
+  }
+  juce::Font getPopupMenuFont() override { return defaultFont; }
+
 private:
   // Color palette (cached from static getters)
   juce::Colour backgroundDark;
@@ -79,6 +97,7 @@ private:
   juce::Colour accentTertiary;
   juce::Colour textPrimary;
   juce::Colour textSecondary;
+  juce::Font defaultFont;
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CustomLookAndFeel)
 };
