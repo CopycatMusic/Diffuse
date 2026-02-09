@@ -35,32 +35,32 @@ void STFTProcessor::setFFTSize(int size) {
     switch (fftSize) {
     case 64:
       fft = fft64;
-      window = window64;
+      currentWindow = &window64;
       break;
     case 128:
       fft = fft128;
-      window = window128;
+      currentWindow = &window128;
       break;
     case 256:
       fft = fft256;
-      window = window256;
+      currentWindow = &window256;
       break;
     case 512:
       fft = fft512;
-      window = window512;
+      currentWindow = &window512;
       break;
     case 1024:
       fft = fft1024;
-      window = window1024;
+      currentWindow = &window1024;
       break;
     case 2048:
       fft = fft2048;
-      window = window2048;
+      currentWindow = &window2048;
       break;
     case 4096:
     default:
       fft = fft4096;
-      window = window4096;
+      currentWindow = &window4096;
       break;
     }
 
@@ -116,33 +116,27 @@ void STFTProcessor::initBuffers() {
   fft2048 = fft2048Owner.get();
   fft4096 = fft4096Owner.get();
 
-  // Pre-allocate window functions for all supported sizes
-  window64Owner = std::make_unique<juce::dsp::WindowingFunction<float>>(
-      65, juce::dsp::WindowingFunction<float>::hann, false);
-  window128Owner = std::make_unique<juce::dsp::WindowingFunction<float>>(
-      129, juce::dsp::WindowingFunction<float>::hann, false);
-  window256Owner = std::make_unique<juce::dsp::WindowingFunction<float>>(
-      257, juce::dsp::WindowingFunction<float>::hann, false);
-  window512Owner = std::make_unique<juce::dsp::WindowingFunction<float>>(
-      513, juce::dsp::WindowingFunction<float>::hann, false);
-  window1024Owner = std::make_unique<juce::dsp::WindowingFunction<float>>(
-      1025, juce::dsp::WindowingFunction<float>::hann, false);
-  window2048Owner = std::make_unique<juce::dsp::WindowingFunction<float>>(
-      2049, juce::dsp::WindowingFunction<float>::hann, false);
-  window4096Owner = std::make_unique<juce::dsp::WindowingFunction<float>>(
-      4097, juce::dsp::WindowingFunction<float>::hann, false);
+  // Pre-allocate window buffers (Periodic Hann)
+  // Formula: w[n] = 0.5 * (1 - cos(2*pi*n/N)) for n=0..N-1
+  auto generateWindow = [](std::vector<float> &w, int size) {
+    w.resize(size);
+    for (int i = 0; i < size; ++i) {
+      w[i] = 0.5f * (1.0f - std::cos(2.0f * juce::MathConstants<float>::pi *
+                                     (float)i / (float)size));
+    }
+  };
 
-  window64 = window64Owner.get();
-  window128 = window128Owner.get();
-  window256 = window256Owner.get();
-  window512 = window512Owner.get();
-  window1024 = window1024Owner.get();
-  window2048 = window2048Owner.get();
-  window4096 = window4096Owner.get();
+  generateWindow(window64, 64);
+  generateWindow(window128, 128);
+  generateWindow(window256, 256);
+  generateWindow(window512, 512);
+  generateWindow(window1024, 1024);
+  generateWindow(window2048, 2048);
+  generateWindow(window4096, 4096);
 
   // Set current pointers based on default fftSize
   fft = fft2048;
-  window = window2048;
+  currentWindow = &window2048;
 
   // Pre-allocate buffers based on maxFftSize (no runtime allocation)
   int maxNumBins = maxFftSize / 2 + 1;
@@ -206,7 +200,7 @@ void STFTProcessor::processFrame(
   }
 
   // Apply the analysis window to avoid spectral leakage
-  window->multiplyWithWindowingTable(fftPtr, fftSize);
+  juce::FloatVectorOperations::multiply(fftPtr, currentWindow->data(), fftSize);
 
   // Perform the forward FFT
   fft->performRealOnlyForwardTransform(fftPtr, true);
@@ -242,7 +236,7 @@ void STFTProcessor::processFrame(
   fft->performRealOnlyInverseTransform(fftPtr);
 
   // Apply the synthesis window for resynthesis
-  window->multiplyWithWindowingTable(fftPtr, fftSize);
+  juce::FloatVectorOperations::multiply(fftPtr, currentWindow->data(), fftSize);
 
   // Scale down the output samples because of the overlapping windows
   for (int i = 0; i < fftSize; ++i) {

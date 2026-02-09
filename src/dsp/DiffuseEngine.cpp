@@ -18,7 +18,7 @@ void DiffuseEngine::prepare(double sampleRate, int maxBlockSize) {
   constexpr int overlapFactor = 4;
   int minHopSize =
       minFFTSize /
-      overlapFactor; // 256/4 = 64 (smallest hop = most frames needed)
+      overlapFactor; // 64/4 = 16 (smallest hop = most frames needed)
 
   // Store current working values
   currentNumBins = stftProcessorL.getNumBins();

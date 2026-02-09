@@ -53,8 +53,6 @@ private:
 
   // Current FFT and window (raw pointers to pre-allocated objects)
   juce::dsp::FFT *fft = nullptr;
-  juce::dsp::WindowingFunction<float> *window = nullptr;
-
   // Pre-allocated FFT objects for each supported size (owners)
   std::unique_ptr<juce::dsp::FFT> fft64Owner;
   std::unique_ptr<juce::dsp::FFT> fft128Owner;
@@ -64,15 +62,6 @@ private:
   std::unique_ptr<juce::dsp::FFT> fft2048Owner;
   std::unique_ptr<juce::dsp::FFT> fft4096Owner;
 
-  // Pre-allocated window functions for each supported size (owners)
-  std::unique_ptr<juce::dsp::WindowingFunction<float>> window64Owner;
-  std::unique_ptr<juce::dsp::WindowingFunction<float>> window128Owner;
-  std::unique_ptr<juce::dsp::WindowingFunction<float>> window256Owner;
-  std::unique_ptr<juce::dsp::WindowingFunction<float>> window512Owner;
-  std::unique_ptr<juce::dsp::WindowingFunction<float>> window1024Owner;
-  std::unique_ptr<juce::dsp::WindowingFunction<float>> window2048Owner;
-  std::unique_ptr<juce::dsp::WindowingFunction<float>> window4096Owner;
-
   // Raw pointers for quick access
   juce::dsp::FFT *fft64 = nullptr;
   juce::dsp::FFT *fft128 = nullptr;
@@ -81,13 +70,18 @@ private:
   juce::dsp::FFT *fft1024 = nullptr;
   juce::dsp::FFT *fft2048 = nullptr;
   juce::dsp::FFT *fft4096 = nullptr;
-  juce::dsp::WindowingFunction<float> *window64 = nullptr;
-  juce::dsp::WindowingFunction<float> *window128 = nullptr;
-  juce::dsp::WindowingFunction<float> *window256 = nullptr;
-  juce::dsp::WindowingFunction<float> *window512 = nullptr;
-  juce::dsp::WindowingFunction<float> *window1024 = nullptr;
-  juce::dsp::WindowingFunction<float> *window2048 = nullptr;
-  juce::dsp::WindowingFunction<float> *window4096 = nullptr;
+
+  // Pre-allocated window buffers (Periodic Hann)
+  std::vector<float> window64;
+  std::vector<float> window128;
+  std::vector<float> window256;
+  std::vector<float> window512;
+  std::vector<float> window1024;
+  std::vector<float> window2048;
+  std::vector<float> window4096;
+
+  // Current window pointer
+  const std::vector<float> *currentWindow = nullptr;
 
   // Counts up until the next hop
   int count = 0;

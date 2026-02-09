@@ -16,7 +16,7 @@ constexpr int kMargin = 10; // Outer window padding
 constexpr int kSectionGap =
     10;                      // Vertical gap between major functional sections
 constexpr int kMainGap = 10; // General vertical gap between components
-constexpr int kSubGap = 5;   // Tight vertical gap (e.g. Label to Knob)
+constexpr int kSubGap = 2;   // Tight vertical gap (e.g. Label to Knob)
 
 // ===== Element Dimensions =====
 constexpr int kElementHeight = 15; // Standard height for labels and textboxes
@@ -28,7 +28,6 @@ constexpr int kTextGap = 20; // Horizontal gap between knob and text
 constexpr int kLargeKnob = 90;
 constexpr int kMediumKnob = 65;
 constexpr int kSmallKnob = 55;
-constexpr int kMiniKnob = 30; // New size for LFO knobs
 constexpr int kBottomItemGap = 18;
 
 // ===== Component Specifics =====

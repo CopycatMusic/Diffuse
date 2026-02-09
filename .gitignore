@@ -92,3 +92,6 @@ logs/
 
 # Output artifacts (keep in separate release folder)
 installer/output/
+
+
+resources/BackUp
