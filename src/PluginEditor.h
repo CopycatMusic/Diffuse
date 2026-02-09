@@ -43,6 +43,12 @@ private:
   std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment>
       decayAttachment;
 
+  // Feedback Knob
+  juce::Slider feedbackSlider;
+  juce::Label feedbackLabel;
+  std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
+      feedbackAttachment;
+
   // Mix Knob
   juce::Slider mixSlider;
   juce::Label mixLabel;

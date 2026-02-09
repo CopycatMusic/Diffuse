@@ -56,6 +56,15 @@ public:
   }
 
   /**
+   * Set frequency-domain feedback amount (0.0-0.95).
+   * Mixes previous frame's processed spectrum with current input.
+   */
+  void setFeedback(float amount) {
+    feedbackAmount = juce::jlimit(0.0f, 0.95f, amount);
+  }
+  float getFeedback() const { return feedbackAmount.load(); }
+
+  /**
    * Set FFT size (1024, 2048, 4096, 8192, 16384).
    */
   void setFFTSize(int size);
@@ -84,13 +93,19 @@ private:
   std::atomic<bool> decayEnabled{false};    // Decay toggle
   std::atomic<float> mix{1.0f};             // 0.0 = dry, 1.0 = wet
   std::atomic<float> outputGain{1.0f};      // Multiplier (default 0dB = 1.0)
+  std::atomic<float> feedbackAmount{0.0f};  // 0.0-0.95 feedback mix
 
+private:
   // Per-bin delay buffers (flattened for cache locality)
   std::vector<std::complex<float>> delayBufferL;
   std::vector<std::complex<float>> delayBufferR;
   std::vector<int> delayWritePosL;
   std::vector<int> delayWritePosR;
   int maxDelaySamples = 0;
+
+  // Previous frame spectrum for frequency-domain feedback
+  std::vector<std::complex<float>> prevSpectrumL;
+  std::vector<std::complex<float>> prevSpectrumR;
 
   // Dry signal delay buffers (for alignment with STFT latency)
   juce::AudioBuffer<float> dryDelayBufferL;

@@ -52,6 +52,12 @@ void DiffuseEngine::prepare(double sampleRate, int maxBlockSize) {
   dryDelayBufferL.clear();
   dryDelayBufferR.clear();
   dryDelayWritePos = 0;
+
+  // Initialize previous spectrum buffers for feedback
+  prevSpectrumL.assign(static_cast<size_t>(maxNumBins),
+                       std::complex<float>(0.0f, 0.0f));
+  prevSpectrumR.assign(static_cast<size_t>(maxNumBins),
+                       std::complex<float>(0.0f, 0.0f));
 }
 
 void DiffuseEngine::reset() {
@@ -69,6 +75,12 @@ void DiffuseEngine::reset() {
   dryDelayBufferL.clear();
   dryDelayBufferR.clear();
   dryDelayWritePos = 0;
+
+  // Clear feedback spectrum buffers
+  std::fill(prevSpectrumL.begin(), prevSpectrumL.end(),
+            std::complex<float>(0.0f, 0.0f));
+  std::fill(prevSpectrumR.begin(), prevSpectrumR.end(),
+            std::complex<float>(0.0f, 0.0f));
 }
 
 void DiffuseEngine::process(juce::AudioBuffer<float> &buffer) {
@@ -173,6 +185,7 @@ void DiffuseEngine::applyDiffuse(std::complex<float> *spectrum, int numBins,
   float hopTimeMs = (hop / sr) * 1000.0f;
   float diffuseMaxMs = diffuseAmountMs.load();
   float lowCut = lowCutFreq.load();
+  float feedback = feedbackAmount.load();
   const float transitionWidth = 100.0f; // Hz for smooth transition
 
   // Validate buffer sizing
@@ -180,7 +193,19 @@ void DiffuseEngine::applyDiffuse(std::complex<float> *spectrum, int numBins,
       static_cast<size_t>(numBins) * static_cast<size_t>(maxDelaySamples))
     return;
 
+  // Get reference to appropriate prevSpectrum buffer
+  auto &prevSpectrum = isLeftChannel ? prevSpectrumL : prevSpectrumR;
+
   for (int bin = 0; bin < numBins; ++bin) {
+    float freq = binToFrequency(bin);
+
+    // Apply frequency-domain feedback: mix with previous frame's spectrum
+    // Only apply to frequencies above lowcut to prevent low-frequency aliasing
+    if (feedback > 0.0f && bin < static_cast<int>(prevSpectrum.size()) &&
+        freq >= lowCut) {
+      spectrum[bin] += prevSpectrum[bin] * feedback;
+    }
+
     float delayMs = 0.0f;
 
     // Add diffuse jitter (static hash-based, per bin/channel)
@@ -206,8 +231,8 @@ void DiffuseEngine::applyDiffuse(std::complex<float> *spectrum, int numBins,
         };
 
         // Different seed offset for left/right channel stereo separation
-        uint32_t seed =
-            static_cast<uint32_t>(bin) + (isLeftChannel ? 0u : 0x9E3779B9u);
+        uint32_t seed = static_cast<uint32_t>(bin) +
+                        (isLeftChannel ? 0x243F6A88u : 0x9E3779B9u);
         float hash = intHash(seed);
 
         // Direct mapping: [0, D_max] with smooth transition near lowcut
@@ -217,10 +242,13 @@ void DiffuseEngine::applyDiffuse(std::complex<float> *spectrum, int numBins,
 
     float delayFramesFloat = delayMs / hopTimeMs;
     int delayFramesInt = static_cast<int>(delayFramesFloat);
+    float fractionalFrames =
+        delayFramesFloat - static_cast<float>(delayFramesInt);
 
     // Clamp to buffer size
     if (delayFramesInt >= maxDelaySamples) {
       delayFramesInt = maxDelaySamples - 1;
+      fractionalFrames = 0.0f;
     }
 
     // Get write position for this bin
@@ -239,9 +267,42 @@ void DiffuseEngine::applyDiffuse(std::complex<float> *spectrum, int numBins,
     std::complex<float> delayedSample =
         delayBuffer[binOffset + static_cast<size_t>(readPos)];
 
-    // Apply decay: longer delay = lower volume (linear attenuation)
+    // HiRes: always apply phase rotation for fractional frame compensation
+    if (fractionalFrames > 0.0001f) {
+      float sr = static_cast<float>(currentSampleRate.load());
+      int fftSize = currentFFTSize.load();
+      float hop = static_cast<float>(currentHopSize.load());
+
+      // Calculate frequency for this bin
+      float binFreq =
+          static_cast<float>(bin) * sr / static_cast<float>(fftSize);
+
+      // Calculate time offset for fractional frames (in seconds)
+      float fractionalDelaySec = fractionalFrames * hop / sr;
+
+      // Phase offset: φ = -2π × f × Δt
+      float phaseOffset =
+          -2.0f * juce::MathConstants<float>::pi * binFreq * fractionalDelaySec;
+
+      // Apply phase rotation
+      std::complex<float> rotator(std::cos(phaseOffset), std::sin(phaseOffset));
+      delayedSample *= rotator;
+    }
+
+    // Store UN-compensated spectrum for next frame's feedback
+    // This prevents energy accumulation from decay compensation
+    if (bin < static_cast<int>(prevSpectrum.size())) {
+      // Apply decay WITHOUT compensation for feedback storage
+      std::complex<float> feedbackSample = delayedSample;
+      if (decayEnabled.load() && diffuseMaxMs > 0.0f && delayMs > 0.0f) {
+        float decayGain = 1.0f - (delayMs / diffuseMaxMs);
+        feedbackSample *= decayGain;
+      }
+      prevSpectrum[bin] = feedbackSample;
+    }
+
+    // Apply decay WITH compensation for output
     // Compensation: uniform hash distribution causes ~50% average loudness loss
-    // Apply 2x gain to compensate while preserving the decay effect
     if (decayEnabled.load() && diffuseMaxMs > 0.0f && delayMs > 0.0f) {
       float decayGain = 1.0f - (delayMs / diffuseMaxMs);
       constexpr float decayCompensation = 2.0f;

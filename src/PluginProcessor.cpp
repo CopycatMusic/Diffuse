@@ -38,6 +38,12 @@ CopycatDiffuseProcessor::createParameterLayout() {
   params.push_back(std::make_unique<juce::AudioParameterBool>(
       juce::ParameterID{"decay", 1}, "Decay", true));
 
+  // Feedback (0-95%, default 0%)
+  params.push_back(std::make_unique<juce::AudioParameterFloat>(
+      juce::ParameterID{"feedback", 1}, "Feedback",
+      juce::NormalisableRange<float>(0.0f, 95.0f, 0.1f), 0.0f,
+      juce::AudioParameterFloatAttributes().withLabel("%")));
+
   // Mix (0-100%, default 100% wet)
   params.push_back(std::make_unique<juce::AudioParameterFloat>(
       juce::ParameterID{"mix", 1}, "Mix",
@@ -122,6 +128,11 @@ void CopycatDiffuseProcessor::processBlock(juce::AudioBuffer<float> &buffer,
   auto *gainParam = parameters.getRawParameterValue("gain");
   if (gainParam) {
     engine.setGain(gainParam->load());
+  }
+
+  auto *feedbackParam = parameters.getRawParameterValue("feedback");
+  if (feedbackParam) {
+    engine.setFeedback(feedbackParam->load() / 100.0f); // Convert % to 0-0.95
   }
 
   // Process audio

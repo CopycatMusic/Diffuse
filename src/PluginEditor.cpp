@@ -74,6 +74,23 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
       std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
           processorRef.getParameters(), "decay", decayButton);
 
+  // Feedback Knob (Medium, Label Above, Value Below)
+  feedbackSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+  feedbackSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false,
+                                 UIConstants::kTextBoxWidth,
+                                 UIConstants::kElementHeight);
+  feedbackSlider.setMouseDragSensitivity(150);
+  addAndMakeVisible(feedbackSlider);
+  feedbackAttachment =
+      std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+          processorRef.getParameters(), "feedback", feedbackSlider);
+
+  feedbackLabel.setText("Feedback", juce::dontSendNotification);
+  feedbackLabel.setJustificationType(juce::Justification::centred);
+  feedbackLabel.setColour(juce::Label::textColourId,
+                          CustomLookAndFeel::getTextPrimary());
+  addAndMakeVisible(feedbackLabel);
+
   // ===== Section 2: Resolution + Mix =====
 
   // Resolution (FFT Size) Knob (Small, Label Above, Value Below)
@@ -182,7 +199,7 @@ void CopycatDiffuseEditor::resized() {
 
   int y = UIConstants::kTitleBarHeight + margin;
 
-  // ===== Section 1: Diffuse (Large) + Low Cut (Medium) side by side =====
+  // ===== Row 1: Diffuse (Large) + Feedback (Medium) side by side =====
   int topRowItemGap = UIConstants::kBottomItemGap;
   int totalTopRowWidth = largeKnob + topRowItemGap + mediumKnob;
   int topRowStartX = (width - totalTopRowWidth) / 2;
@@ -201,27 +218,48 @@ void CopycatDiffuseEditor::resized() {
   diffuseSlider.setBounds(diffuseX, diffuseKnobY, largeKnob,
                           diffuseKnobHeightWithText);
 
-  // Low Cut - Right (Medium Knob, vertically centered with Diffuse)
-  int lowcutKnobHeightWithText =
+  // Feedback - Right (Medium Knob, vertically centered with Diffuse)
+  int feedbackKnobHeightWithText =
       mediumKnob + UIConstants::kElementHeight + UIConstants::kSubGap;
-  int lowcutVerticalOffset =
-      (diffuseKnobHeightWithText - lowcutKnobHeightWithText) / 2;
+  int feedbackVerticalOffset =
+      (diffuseKnobHeightWithText - feedbackKnobHeightWithText) / 2;
 
-  int lowcutX = diffuseX + largeKnob + topRowItemGap;
-  lowcutLabel.setBounds(lowcutX, topRowLabelY, mediumKnob,
-                        UIConstants::kElementHeight);
-  lowcutSlider.setBounds(lowcutX, diffuseKnobY + lowcutVerticalOffset,
-                         mediumKnob, lowcutKnobHeightWithText);
+  int feedbackX = diffuseX + largeKnob + topRowItemGap;
+  feedbackLabel.setBounds(feedbackX, topRowLabelY, mediumKnob,
+                          UIConstants::kElementHeight);
+  feedbackSlider.setBounds(feedbackX, diffuseKnobY + feedbackVerticalOffset,
+                           mediumKnob, feedbackKnobHeightWithText);
 
   y += UIConstants::kElementHeight + UIConstants::kSubGap +
        diffuseKnobHeightWithText + UIConstants::kMainGap;
 
-  // Decay button (centered)
+  // ===== Row 2: Low Cut (Small) + Decay button side by side =====
+  int lowcutKnobHeightWithText =
+      smallKnob + UIConstants::kElementHeight + UIConstants::kSubGap;
+  int row2ItemGap = UIConstants::kBottomItemGap;
   int buttonWidth = UIConstants::kButtonWidth;
   int buttonHeight = UIConstants::kRowHeight;
-  decayButton.setBounds((width - buttonWidth) / 2, y, buttonWidth,
-                        buttonHeight);
-  y += buttonHeight + UIConstants::kSectionGap;
+
+  // Calculate total width and centering
+  int totalRow2Width = smallKnob + row2ItemGap + buttonWidth;
+  int row2StartX = (width - totalRow2Width) / 2;
+
+  // Low Cut knob
+  int lowcutX = row2StartX;
+  lowcutLabel.setBounds(lowcutX, y, smallKnob, UIConstants::kElementHeight);
+  lowcutSlider.setBounds(lowcutX,
+                         y + UIConstants::kElementHeight + UIConstants::kSubGap,
+                         smallKnob, lowcutKnobHeightWithText);
+
+  // Decay button (vertically centered with Low Cut knob area)
+  int lowcutTotalHeight = UIConstants::kElementHeight + UIConstants::kSubGap +
+                          lowcutKnobHeightWithText;
+  int decayButtonY =
+      y + (lowcutTotalHeight - buttonHeight) / 2 - buttonHeight / 2 - 2;
+  int decayButtonX = lowcutX + smallKnob + row2ItemGap;
+  decayButton.setBounds(decayButtonX, decayButtonY, buttonWidth, buttonHeight);
+
+  y += lowcutTotalHeight + UIConstants::kSectionGap;
 
   // ===== Separator Line =====
   separatorLineY = y;
