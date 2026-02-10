@@ -220,8 +220,18 @@ void DiffuseEngine::applyDiffuse(std::complex<float> *spectrum, int numBins,
           return static_cast<float>(x) / static_cast<float>(0xFFFFFFFF);
         };
 
+        // Grain Mode logic: Group bins (1x, 4x, 16x)
+        int gm = grainMode.load();
+        int multiplier = 1;
+        if (gm == 1)
+          multiplier = 4;
+        else if (gm == 2)
+          multiplier = 16;
+
+        int effectiveBin = (bin / multiplier) * multiplier;
+
         // Different seed offset for left/right channel stereo separation
-        uint32_t seed = static_cast<uint32_t>(bin) +
+        uint32_t seed = static_cast<uint32_t>(effectiveBin) +
                         (isLeftChannel ? 0x243F6A88u : 0x9E3779B9u);
         // Direct mapping: [0, D_max] with smooth transition near lowcut
         float hash = intHash(seed);
@@ -230,7 +240,7 @@ void DiffuseEngine::applyDiffuse(std::complex<float> *spectrum, int numBins,
         // sin(phase + binOffset))
         float depth = modDepth.load() / 100.0f; // 0-1.0
         double phase = isLeftChannel ? lfoPhaseL : lfoPhaseR;
-        float binOffset = static_cast<float>(bin) * 0.05f;
+        float binOffset = static_cast<float>(effectiveBin) * 0.05f;
         float lfo = std::sin(static_cast<float>(phase) + binOffset);
 
         delayMs = hash * diffuseMaxMs * factor * (1.0f + depth * lfo);

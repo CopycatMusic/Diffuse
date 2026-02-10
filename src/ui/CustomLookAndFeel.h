@@ -20,14 +20,12 @@ public:
 
   static juce::Colour getTextPrimary() { return juce::Colour(0xFFf5f5f5); }
   static juce::Colour getTextSecondary() { return juce::Colour(0xFFAAAAAA); }
-  static juce::Colour getTextTertiary() { return juce::Colour(0xFF475871); }
+  static juce::Colour getTextTertiary() { return juce::Colour(0xFF566A8A); }
 
-  // https://coolors.co/0d1117-161b22-00d4ff-ff6b6b-ffd93d-ffffff
-  // new color version
-  // https://coolors.co/0a131f-0d1827-0f1c2e-45d4ed-e63946-ffd93d-f5f5f5-999999
-  // DO NOT CHANGE THIS LINK
   // https://coolors.co/0a131f-0d1827-0f1c2e-56d9f0-e63946-ffd93d-f5f5f5-242C39
-  // new(ver3)
+  // (ver3)
+  // https://coolors.co/0a131f-0f1c2e-56d9f0-e63946-ffd93d-f5f5f5-AAAAAA-566A8A
+  // new
 
   // Slider
   void drawRotarySlider(juce::Graphics &g, int x, int y, int width, int height,

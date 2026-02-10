@@ -19,6 +19,27 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
   // Set default font for all UI components via LookAndFeel
   customLookAndFeel.setDefaultFont(defaultFont);
 
+  // ===== Logo Labels: COPY / CAT =====
+  logoLabelCopy.setText("COPY", juce::dontSendNotification);
+  logoLabelCopy.setFont(titleFont.withHeight(UIConstants::kDefaultFontSize));
+  logoLabelCopy.getProperties().set("isTitle", true);
+  logoLabelCopy.setColour(juce::Label::textColourId,
+                          CustomLookAndFeel::getTextTertiary());
+  logoLabelCopy.setJustificationType(juce::Justification::centredLeft);
+  logoLabelCopy.setBorderSize(
+      juce::BorderSize<int>(0, 0, 0, 0)); // Remove padding to ensure tight fit
+  addAndMakeVisible(logoLabelCopy);
+
+  logoLabelCat.setText("CAT", juce::dontSendNotification);
+  logoLabelCat.setFont(titleFont.withHeight(UIConstants::kDefaultFontSize));
+  logoLabelCat.getProperties().set("isTitle", true);
+  logoLabelCat.setColour(juce::Label::textColourId,
+                         CustomLookAndFeel::getTextTertiary());
+  logoLabelCat.setJustificationType(juce::Justification::centredLeft);
+  logoLabelCat.setBorderSize(
+      juce::BorderSize<int>(0, 0, 0, 0)); // Remove padding
+  addAndMakeVisible(logoLabelCat);
+
   // ===== Title Bar: Single white label =====
   titleLabel.setName("Title");
   titleLabel.getProperties().set("isTitle", true);
@@ -67,16 +88,83 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
                         CustomLookAndFeel::getTextPrimary());
   addAndMakeVisible(cutoffLabel);
 
-  // Decay Toggle Button (TextButton style like reference project)
-  decayButton.setClickingTogglesState(true);
-  decayButton.setColour(juce::TextButton::buttonOnColourId,
-                        CustomLookAndFeel::getAccentPrimary());
-  decayButton.setColour(juce::TextButton::textColourOnId,
-                        CustomLookAndFeel::getTextPrimary());
-  addAndMakeVisible(decayButton);
-  decayAttachment =
-      std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
-          processorRef.getParameters(), "decay", decayButton);
+  // Decay Buttons Setup
+  auto setupDecayButton = [this](ShadowButton &b, bool onState,
+                                 const juce::String &text,
+                                 ShadowButton::SegmentPosition pos) {
+    b.setButtonText(text);
+    b.setSegmentPosition(pos);
+    b.setClickingTogglesState(true);
+    b.setRadioGroupId(1002);
+    b.setColour(juce::TextButton::buttonOnColourId,
+                CustomLookAndFeel::getAccentPrimary());
+    b.setColour(juce::TextButton::textColourOnId,
+                CustomLookAndFeel::getTextPrimary());
+    addAndMakeVisible(b);
+
+    b.onClick = [this, onState] {
+      if (auto *param = processorRef.getParameters().getParameter("decay")) {
+        param->setValueNotifyingHost(onState ? 1.0f : 0.0f);
+      }
+    };
+  };
+
+  setupDecayButton(decayOffButton, false, "OFF", ShadowButton::kLeft);
+  setupDecayButton(decayOnButton, true, "ON", ShadowButton::kRight);
+
+  decayGroupLabel.setText("Decay", juce::dontSendNotification);
+  decayGroupLabel.setJustificationType(juce::Justification::centred);
+  decayGroupLabel.setColour(juce::Label::textColourId,
+                            CustomLookAndFeel::getTextPrimary());
+  addAndMakeVisible(decayGroupLabel);
+
+  // Grain Buttons Setup
+  auto setupGrainButton = [this](ShadowButton &b, int index,
+                                 const juce::String &text,
+                                 ShadowButton::SegmentPosition pos) {
+    b.setButtonText(text);
+    b.setSegmentPosition(pos);
+    b.setClickingTogglesState(true);
+    b.setRadioGroupId(1001); // Radio group for single selection
+    b.setColour(juce::TextButton::buttonOnColourId,
+                CustomLookAndFeel::getAccentPrimary());
+    b.setColour(juce::TextButton::textColourOnId,
+                CustomLookAndFeel::getTextPrimary());
+    addAndMakeVisible(b);
+
+    b.onClick = [this, index] {
+      if (auto *param = processorRef.getParameters().getParameter("grain")) {
+        param->setValueNotifyingHost(
+            param->getNormalisableRange().convertTo0to1(
+                static_cast<float>(index)));
+      }
+    };
+  };
+
+  setupGrainButton(grain1xButton, 0, "1x", ShadowButton::kLeft);
+  setupGrainButton(grain4xButton, 1, "4x", ShadowButton::kMiddle);
+  setupGrainButton(grain16xButton, 2, "16x", ShadowButton::kRight);
+
+  grainGroupLabel.setText("Grain", juce::dontSendNotification);
+  grainGroupLabel.setJustificationType(juce::Justification::centred);
+  grainGroupLabel.setColour(juce::Label::textColourId,
+                            CustomLookAndFeel::getTextPrimary());
+  addAndMakeVisible(grainGroupLabel);
+
+  // Initial state sync
+  auto *grainParam = processorRef.getParameters().getRawParameterValue("grain");
+  if (grainParam) {
+    updateGrainButtons(static_cast<int>(grainParam->load()));
+  }
+
+  auto *decayParam = processorRef.getParameters().getRawParameterValue("decay");
+  if (decayParam) {
+    updateDecayButtons(decayParam->load() > 0.5f);
+  }
+
+  // Register listener for parameter changes
+  processorRef.getParameters().addParameterListener("grain", this);
+  processorRef.getParameters().addParameterListener("decay", this);
 
   // Feedback Knob (Medium, Label Above, Value Below)
   feedbackSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
@@ -202,7 +290,33 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
   setSize(UIConstants::kWindowWidth, UIConstants::kWindowHeight);
 }
 
-CopycatDiffuseEditor::~CopycatDiffuseEditor() { setLookAndFeel(nullptr); }
+CopycatDiffuseEditor::~CopycatDiffuseEditor() {
+  processorRef.getParameters().removeParameterListener("grain", this);
+  processorRef.getParameters().removeParameterListener("decay", this);
+  setLookAndFeel(nullptr);
+}
+
+void CopycatDiffuseEditor::parameterChanged(const juce::String &parameterID,
+                                            float newValue) {
+  if (parameterID == "grain") {
+    juce::MessageManager::callAsync(
+        [this, newValue] { updateGrainButtons(static_cast<int>(newValue)); });
+  } else if (parameterID == "decay") {
+    juce::MessageManager::callAsync(
+        [this, newValue] { updateDecayButtons(newValue > 0.5f); });
+  }
+}
+
+void CopycatDiffuseEditor::updateGrainButtons(int choiceIndex) {
+  grain1xButton.setToggleState(choiceIndex == 0, juce::dontSendNotification);
+  grain4xButton.setToggleState(choiceIndex == 1, juce::dontSendNotification);
+  grain16xButton.setToggleState(choiceIndex == 2, juce::dontSendNotification);
+}
+
+void CopycatDiffuseEditor::updateDecayButtons(bool enabled) {
+  decayOffButton.setToggleState(!enabled, juce::dontSendNotification);
+  decayOnButton.setToggleState(enabled, juce::dontSendNotification);
+}
 
 void CopycatDiffuseEditor::paint(juce::Graphics &g) {
   auto bounds = getLocalBounds();
@@ -250,10 +364,24 @@ void CopycatDiffuseEditor::resized() {
 
   titleLabel.setBounds(titleArea);
 
+  // ===== Logo Layout (Left of Title) =====
+  // Stacked "COPY" and "CAT" labels, vertically centered in title bar
+  const int logoFontSize = static_cast<int>(UIConstants::kDefaultFontSize);
+  const int logoX = margin;
+  // Total height of 2 lines. We center this block in the 40px title bar.
+  // 40 - (16 * 2) = 8. So 4px padding top.
+  const int totalLogoHeight = logoFontSize * 2 - 4;
+  const int logoStartY = (UIConstants::kTitleBarHeight - totalLogoHeight) / 2;
+  const int logoWidth = 48; // Enough to fit "COPY"
+
+  logoLabelCopy.setBounds(logoX, logoStartY, logoWidth, logoFontSize);
+  logoLabelCat.setBounds(logoX, logoStartY + logoFontSize - 4, logoWidth,
+                         logoFontSize);
+
   int y = UIConstants::kTitleBarHeight + margin;
 
   // ===== Row 1: Diffuse (Large) + Feedback (Large) side by side =====
-  int topRowItemGap = UIConstants::kKnobHGap;
+  int topRowItemGap = UIConstants::kRow1HGap;
   int totalTopRowWidth = largeKnob + topRowItemGap + largeKnob;
   int topRowStartX = (width - totalTopRowWidth) / 2;
 
@@ -285,7 +413,7 @@ void CopycatDiffuseEditor::resized() {
   int row2CompWidth = 60;
   int row2SmallKnob = UIConstants::kSmallKnob;
   int row2MiniKnob = UIConstants::kMiniKnob;
-  int row2Gap = UIConstants::kKnobHGap;
+  int row2Gap = UIConstants::kRow2HGap;
   // No gap between Rate and Depth: Total = (Rate + Depth) + Gap + Cutoff
   int totalRow2Width = (row2CompWidth * 2) + row2Gap + row2CompWidth;
   int row2StartX = (width - totalRow2Width) / 2;
@@ -325,22 +453,61 @@ void CopycatDiffuseEditor::resized() {
 
   y += 91 + UIConstants::kMainGap;
 
-  // ===== Row 3: Decay button (centered) =====
-  int buttonWidth = UIConstants::kButtonWidth;
-  int buttonHeight = UIConstants::kRowHeight;
-  int decayButtonX = (width - buttonWidth) / 2;
-  decayButton.setBounds(decayButtonX, y, buttonWidth, buttonHeight);
+  // ===== Row 3: Decay & Grain Segmented Controls side-by-side =====
+  const int shadowMargin = UIConstants::kButtonShadowMargin;
+  int buttonHeight = UIConstants::kRowHeight + (shadowMargin * 2);
+  int gap = UIConstants::kRow3HGap;
 
-  y += buttonHeight + UIConstants::kSectionGap;
+  // Segment widths
+  int decayBtnW = UIConstants::kSegmentedItemWidth;
+  int grainBtnW = UIConstants::kSegmentedItemWidth;
+  int decayBtnWWithShadow = decayBtnW + (shadowMargin * 2);
+  int grainBtnWWithShadow = grainBtnW + (shadowMargin * 2);
 
-  // ===== Separator Line =====
-  separatorLineY = y;
-  y += UIConstants::kSectionGap;
+  int decayGroupWidth = (decayBtnW * 2) + 2;
+  int grainGroupWidth = (grainBtnW * 3) + 4;
+
+  int row3TotalWidth = decayGroupWidth + gap + grainGroupWidth;
+  int startX3 = (width - row3TotalWidth) / 2;
+
+  // Decay Group
+  decayGroupLabel.setBounds(startX3, y, decayGroupWidth,
+                            UIConstants::kElementHeight);
+  int decayBtnY = y + UIConstants::kElementHeight + UIConstants::kSubGap + 2;
+  decayOffButton.setBounds(startX3 - shadowMargin, decayBtnY - shadowMargin,
+                           decayBtnWWithShadow, buttonHeight);
+  decayOnButton.setBounds(startX3 + decayBtnW - shadowMargin + 2,
+                          decayBtnY - shadowMargin, decayBtnWWithShadow,
+                          buttonHeight);
+
+  // Grain Group
+  int grainX = startX3 + decayGroupWidth + gap;
+  grainGroupLabel.setBounds(grainX, y, grainGroupWidth,
+                            UIConstants::kElementHeight);
+
+  int grainBtnY = y + UIConstants::kElementHeight + UIConstants::kSubGap + 2;
+  grain1xButton.setBounds(grainX - shadowMargin, grainBtnY - shadowMargin,
+                          grainBtnWWithShadow, buttonHeight);
+  grain4xButton.setBounds(grainX + grainBtnW - shadowMargin + 2,
+                          grainBtnY - shadowMargin, grainBtnWWithShadow,
+                          buttonHeight);
+  grain16xButton.setBounds(grainX + (grainBtnW * 2) - shadowMargin + 4,
+                           grainBtnY - shadowMargin, grainBtnWWithShadow,
+                           buttonHeight);
+
+  // Calculate the visual bottom of Row 3 buttons
+  int row3VisualBottom = grainBtnY + UIConstants::kRowHeight;
+
+  // Position the separator line exactly one kSectionGap below the buttons
+  separatorLineY = row3VisualBottom + UIConstants::kSectionGap;
+
+  // Position the next section exactly one kSectionGap below the line
+  y = separatorLineY + UIConstants::kSectionGap;
 
   // ===== Section 2: FFT Size + Mix + Gain (3 knobs side-by-side, centered)
   // =====
-  int itemWidth = UIConstants::kSmallKnob;
-  int itemGap = UIConstants::kKnobHGap;
+  int itemWidth = 60;
+  int itemGap = UIConstants::kRow4HGap;
   int totalBottomWidth = (itemWidth * 3) + (itemGap * 2);
   int startX = (width - totalBottomWidth) / 2;
 

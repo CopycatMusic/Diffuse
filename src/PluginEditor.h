@@ -2,24 +2,40 @@
 
 #include "PluginProcessor.h"
 #include "ui/CustomLookAndFeel.h"
+#include "ui/ShadowButton.h"
 #include <juce_audio_processors/juce_audio_processors.h>
 
-class CopycatDiffuseEditor : public juce::AudioProcessorEditor {
+class CopycatDiffuseEditor
+    : public juce::AudioProcessorEditor,
+      public juce::AudioProcessorValueTreeState::Listener {
 public:
   explicit CopycatDiffuseEditor(CopycatDiffuseProcessor &);
   ~CopycatDiffuseEditor() override;
+
+  // AudioProcessorValueTreeState::Listener
+  void parameterChanged(const juce::String &parameterID,
+                        float newValue) override;
 
   void paint(juce::Graphics &) override;
   void resized() override;
 
 private:
+  void updateGrainButtons(int choiceIndex);
+  void updateDecayButtons(bool enabled);
+
+private:
   CopycatDiffuseProcessor &processorRef;
   CustomLookAndFeel customLookAndFeel;
 
-  // Header
-  juce::Label titleLabel;
+  // Font
   juce::Font titleFont;
   juce::Font defaultFont;
+  // https://fonts.google.com/specimen/Montserrat
+
+  // Header
+  juce::Label titleLabel;
+  juce::Label logoLabelCopy;
+  juce::Label logoLabelCat;
 
   // Knobs
   juce::Slider diffuseSlider;
@@ -38,10 +54,15 @@ private:
   std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
       fftSizeAttachment;
 
-  // Decay Toggle Button (TextButton style like reference project)
-  juce::TextButton decayButton{"Decay"};
-  std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment>
-      decayAttachment;
+  // Decay Segmented Control (OFF/ON)
+  juce::Label decayGroupLabel;
+  ShadowButton decayOffButton{"OFF"};
+  ShadowButton decayOnButton{"ON"};
+
+  juce::Label grainGroupLabel;
+  ShadowButton grain1xButton{"1x"};
+  ShadowButton grain4xButton{"4x"};
+  ShadowButton grain16xButton{"16x"};
 
   // Feedback Knob
   juce::Slider feedbackSlider;
