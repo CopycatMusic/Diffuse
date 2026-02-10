@@ -17,22 +17,16 @@ public:
   static juce::Colour getBackgroundMedium() { return juce::Colour(0xFF0f1c2e); }
 
   static juce::Colour getAccentPrimary() { return juce::Colour(0xFF56D9F0); }
-  // Sky Blue
-  // static juce::Colour getAccentSecondary() { return juce::Colour(0xFFE63946);
-  // }
-  // Punch Red
-  // static juce::Colour getAccentTertiary() { return juce::Colour(0xFFffd93d);
-  // }
-  // Mustard Yellow
+
   static juce::Colour getTextPrimary() { return juce::Colour(0xFFf5f5f5); }
-  static juce::Colour getTextSecondary() { return juce::Colour(0xFF999999); }
-  static juce::Colour getTextBoxOutline() { return juce::Colour(0xFF242C39); }
+  static juce::Colour getTextSecondary() { return juce::Colour(0xFFAAAAAA); }
+  static juce::Colour getTextTertiary() { return juce::Colour(0xFF475871); }
 
   // https://coolors.co/0d1117-161b22-00d4ff-ff6b6b-ffd93d-ffffff
   // new color version
   // https://coolors.co/0a131f-0d1827-0f1c2e-45d4ed-e63946-ffd93d-f5f5f5-999999
   // DO NOT CHANGE THIS LINK
-  // https://coolors.co/0a131f-0d1827-0f1c2e-56d9f0-e63946-ffd93d-f5f5f5-5C677D
+  // https://coolors.co/0a131f-0d1827-0f1c2e-56d9f0-e63946-ffd93d-f5f5f5-242C39
   // new(ver3)
 
   // Slider
@@ -97,6 +91,7 @@ private:
   juce::Colour accentTertiary;
   juce::Colour textPrimary;
   juce::Colour textSecondary;
+  juce::Colour textTertiary;
   juce::Font defaultFont;
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CustomLookAndFeel)

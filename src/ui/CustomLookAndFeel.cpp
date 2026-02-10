@@ -11,6 +11,7 @@ CustomLookAndFeel::CustomLookAndFeel() {
   // accentTertiary = getAccentTertiary();
   textPrimary = getTextPrimary();
   textSecondary = getTextSecondary();
+  textTertiary = getTextTertiary();
 
   // Set default colors
   setColour(juce::Slider::thumbColourId, accentPrimary);
@@ -39,7 +40,10 @@ CustomLookAndFeel::CustomLookAndFeel() {
 
   setColour(juce::Label::textColourId, textSecondary);
   setColour(juce::Label::outlineColourId, juce::Colours::transparentBlack);
+  setColour(juce::TextEditor::textColourId, textSecondary);
   setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentBlack);
+  setColour(juce::TextEditor::highlightedTextColourId, backgroundDark);
+  setColour(juce::TextEditor::highlightColourId, accentPrimary);
 }
 
 CustomLookAndFeel::~CustomLookAndFeel() {}
@@ -59,20 +63,28 @@ void CustomLookAndFeel::drawRotarySlider(juce::Graphics &g, int x, int y,
   auto angle =
       rotaryStartAngle + sliderPos * (rotaryEndAngle - rotaryStartAngle);
 
-  // 1. Background Track (Darker arc)
+  // 1. Background Track (Groove)
   // ----------------------------------------------------
-  float trackWidth = 4.0f;
+  bool isMini = slider.getProperties().contains("isMini");
+  float trackWidth = isMini ? 3.0f : 4.0f;
   juce::Path bgArc;
   bgArc.addCentredArc(centreX, centreY, radius - trackWidth / 2,
                       radius - trackWidth / 2, 0.0f, rotaryStartAngle,
                       rotaryEndAngle, true);
 
-  g.setColour(backgroundDark.darker(0.3f));
+  // Outer edge (highlight)
+  g.setColour(backgroundDark.brighter(0.1f));
   g.strokePath(bgArc,
                juce::PathStrokeType(trackWidth, juce::PathStrokeType::curved,
                                     juce::PathStrokeType::rounded));
 
-  // 2. Value Arc (Solid Color - No Gradient)
+  // Inner track (shadow/dark base)
+  g.setColour(backgroundDark.darker(0.8f));
+  g.strokePath(bgArc,
+               juce::PathStrokeType(trackWidth, juce::PathStrokeType::curved,
+                                    juce::PathStrokeType::rounded));
+
+  // 2. Value Arc (Lit area within the groove)
   // ----------------------------------------------------
   if (slider.isEnabled()) {
     juce::Path valueArc;
@@ -80,11 +92,17 @@ void CustomLookAndFeel::drawRotarySlider(juce::Graphics &g, int x, int y,
                            radius - trackWidth / 2, 0.0f, rotaryStartAngle,
                            angle, true);
 
-    // Use solid accent color instead of gradient
-    g.setColour(accentPrimary);
+    // Subtle inner glow effect
+    g.setColour(accentPrimary.withAlpha(0.3f));
     g.strokePath(valueArc,
                  juce::PathStrokeType(trackWidth, juce::PathStrokeType::curved,
                                       juce::PathStrokeType::rounded));
+
+    // Main accent arc
+    g.setColour(accentPrimary);
+    g.strokePath(valueArc, juce::PathStrokeType(trackWidth - 2.0f,
+                                                juce::PathStrokeType::curved,
+                                                juce::PathStrokeType::rounded));
   }
 
   // 3. Knob Body (The central rotating part)
@@ -98,7 +116,7 @@ void CustomLookAndFeel::drawRotarySlider(juce::Graphics &g, int x, int y,
                         knobRadius * 2.0f, knobRadius * 2.0f);
 
     // Subtle shadow
-    juce::DropShadow shadow(juce::Colours::black.withAlpha(0.6f), 5, {0, 2});
+    juce::DropShadow shadow(juce::Colours::black.withAlpha(0.6f), 10, {6, 15});
     shadow.drawForPath(g, knobPath);
 
     // Knob gradient (subtle top-down lighting for 3D effect)
@@ -111,17 +129,17 @@ void CustomLookAndFeel::drawRotarySlider(juce::Graphics &g, int x, int y,
                   knobRadius * 2.0f);
 
     // Inner bezel (thin ring reflection)
-    g.setColour(textPrimary.withAlpha(0.2f));
+    g.setColour(textSecondary.withAlpha(0.1f));
     g.drawEllipse(centreX - knobRadius, centreY - knobRadius, knobRadius * 2.0f,
                   knobRadius * 2.0f, 1.0f);
   }
 
-  // 4. Pointer / Indicator
+  // 4. Pointer / Indicator (Ridge effect)
   // ----------------------------------------------------
   if (knobRadius > 5.0f) {
     juce::Path p;
     float pointerLength = knobRadius * 0.75f;
-    float pointerThickness = 3.0f;
+    float pointerThickness = isMini ? 2.0f : 3.0f;
 
     p.addRoundedRectangle(-pointerThickness * 0.5f, -pointerLength,
                           pointerThickness, pointerLength, 1.5f);
@@ -206,26 +224,42 @@ void CustomLookAndFeel::drawButtonBackground(
     bool shouldDrawButtonAsDown) {
   auto bounds = button.getLocalBounds().toFloat().reduced(
       UIConstants::kBorderWidth / 2.0f);
+  const float cornerSize = 6.0f;
 
+  // 1. Drop Shadow (for depth)
+  if (button.isEnabled()) {
+    juce::Path buttonPath;
+    buttonPath.addRoundedRectangle(bounds, cornerSize);
+    juce::DropShadow shadow(juce::Colours::black.withAlpha(0.6f), 10, {6, 15});
+    shadow.drawForPath(g, buttonPath);
+  }
+
+  // 2. Base Background
   auto baseColour = button.getToggleState()
                         ? button.findColour(juce::TextButton::buttonOnColourId)
-                              .withAlpha(0.3f)
-                        : button.findColour(juce::TextButton::buttonColourId);
+                              .withAlpha(0.5f)
+                        : backgroundMedium; // Use backgroundMedium for "off"
+                                            // state to be visible
 
+  // Adjust for interaction states
   if (shouldDrawButtonAsDown)
     baseColour = baseColour.darker(0.2f);
   else if (shouldDrawButtonAsHighlighted)
     baseColour = baseColour.brighter(0.1f);
 
+  // Apply transparency to blend with shadow/background
   g.setColour(baseColour);
-  g.fillRoundedRectangle(bounds, 6.0f);
 
-  g.setColour(textPrimary.withAlpha(0.1f));
+  // Fill the button body
+  g.fillRoundedRectangle(bounds, cornerSize);
+
+  // 3. Border / Bezel
+  g.setColour(textPrimary.withAlpha(0.1f)); // Subtle border
   if (button.getToggleState())
-    g.setColour(
-        button.findColour(juce::TextButton::buttonOnColourId).withAlpha(0.2f));
+    g.setColour(button.findColour(juce::TextButton::buttonOnColourId)
+                    .withAlpha(0.2f)); // Brighter border when on
 
-  g.drawRoundedRectangle(bounds, 6.0f, UIConstants::kBorderWidth);
+  g.drawRoundedRectangle(bounds, cornerSize, UIConstants::kBorderWidth);
 }
 
 void CustomLookAndFeel::drawButtonText(juce::Graphics &g,
@@ -327,13 +361,16 @@ void CustomLookAndFeel::drawLabel(juce::Graphics &g, juce::Label &label) {
     auto textArea =
         getLabelBorderSize(label).subtractedFrom(label.getLocalBounds());
 
-    g.setColour(label.findColour(juce::Label::textColourId));
+    // Force textSecondary color for slider readouts
+    auto textColour = label.findColour(juce::Label::textColourId);
+    if (dynamic_cast<juce::Slider *>(label.getParentComponent()) != nullptr) {
+      textColour = textSecondary;
+    }
+
+    g.setColour(textColour);
     g.drawFittedText(label.getText(), textArea, label.getJustificationType(),
                      juce::jmax(1, (int)(label.getHeight() / font.getHeight())),
                      label.getMinimumHorizontalScale());
-
-    // Skip drawing the border outline - this is what removes the rectangular
-    // line
   }
 }
 

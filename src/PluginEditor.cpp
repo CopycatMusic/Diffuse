@@ -33,10 +33,11 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
   // Diffuse Knob (Medium, Label Above, Value Below)
   diffuseSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
   diffuseSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false,
-                                UIConstants::kTextBoxWidth,
+                                UIConstants::kLargeTextBoxWidth,
                                 UIConstants::kElementHeight);
   diffuseSlider.setTextValueSuffix("ms");
   diffuseSlider.setMouseDragSensitivity(300);
+
   addAndMakeVisible(diffuseSlider);
   diffuseAttachment =
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
@@ -51,7 +52,7 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
   // Cutoff Knob (Medium, Label Above, Value Below)
   cutoffSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
   cutoffSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false,
-                               UIConstants::kTextBoxWidth,
+                               UIConstants::kSmallTextBoxWidth,
                                UIConstants::kElementHeight);
   cutoffSlider.setTextValueSuffix("Hz");
   cutoffSlider.setMouseDragSensitivity(150);
@@ -80,7 +81,7 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
   // Feedback Knob (Medium, Label Above, Value Below)
   feedbackSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
   feedbackSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false,
-                                 UIConstants::kTextBoxWidth,
+                                 UIConstants::kLargeTextBoxWidth,
                                  UIConstants::kElementHeight);
   feedbackSlider.setTextValueSuffix("%");
   feedbackSlider.setMouseDragSensitivity(150);
@@ -100,7 +101,7 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
   // Resolution (FFT Size) Knob (Small, Label Above, Value Below)
   fftSizeSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
   fftSizeSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false,
-                                UIConstants::kTextBoxWidth,
+                                UIConstants::kSmallTextBoxWidth,
                                 UIConstants::kElementHeight);
   fftSizeSlider.setMouseDragSensitivity(80);
   addAndMakeVisible(fftSizeSlider);
@@ -117,7 +118,7 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
   // Mix Knob (Small, Label Above, Value Below)
   mixSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
   mixSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false,
-                            UIConstants::kTextBoxWidth,
+                            UIConstants::kSmallTextBoxWidth,
                             UIConstants::kElementHeight);
   mixSlider.setTextValueSuffix("%");
   mixSlider.setMouseDragSensitivity(150);
@@ -135,7 +136,7 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
   // Gain Knob (Small, Label Above, Value Below)
   gainSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
   gainSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false,
-                             UIConstants::kTextBoxWidth,
+                             UIConstants::kSmallTextBoxWidth,
                              UIConstants::kElementHeight);
   gainSlider.setTextValueSuffix("dB");
   gainSlider.setMouseDragSensitivity(150);
@@ -153,10 +154,11 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
   // LFO Rate Knob
   modRateSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
   modRateSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false,
-                                UIConstants::kTextBoxWidth,
+                                UIConstants::kSmallTextBoxWidth,
                                 UIConstants::kElementHeight);
   modRateSlider.setTextValueSuffix("Hz");
   modRateSlider.setMouseDragSensitivity(150);
+  modRateSlider.getProperties().set("isMini", true);
   addAndMakeVisible(modRateSlider);
   modRateAttachment =
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
@@ -171,10 +173,11 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
   // LFO Depth Knob
   modDepthSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
   modDepthSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false,
-                                 UIConstants::kTextBoxWidth,
+                                 UIConstants::kSmallTextBoxWidth,
                                  UIConstants::kElementHeight);
   modDepthSlider.setTextValueSuffix("%");
   modDepthSlider.setMouseDragSensitivity(150);
+  modDepthSlider.getProperties().set("isMini", true);
   addAndMakeVisible(modDepthSlider);
   modDepthAttachment =
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
@@ -187,7 +190,7 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
       juce::dontSendNotification);
   lfoHeaderLabel.setJustificationType(juce::Justification::centred);
   lfoHeaderLabel.setColour(juce::Label::textColourId,
-                           CustomLookAndFeel::getTextSecondary());
+                           CustomLookAndFeel::getTextTertiary());
   addAndMakeVisible(lfoHeaderLabel);
 
   modDepthLabel.setText("Depth", juce::dontSendNotification);
@@ -214,8 +217,16 @@ void CopycatDiffuseEditor::paint(juce::Graphics &g) {
   g.fillRect(bounds);
 
   // Draw separator below title bar
-  g.setColour(CustomLookAndFeel::getTextPrimary().withAlpha(0.1f));
+  g.setColour(CustomLookAndFeel::getTextSecondary().withAlpha(0.1f));
   g.fillRect(0, UIConstants::kTitleBarHeight - 1, getWidth(), 1);
+
+  // Draw shadow gradient below title bar
+  juce::ColourGradient shadowGradient(juce::Colours::black.withAlpha(0.6f), 0,
+                                      UIConstants::kTitleBarHeight,
+                                      juce::Colours::transparentBlack, 0,
+                                      UIConstants::kTitleBarHeight + 8, false);
+  g.setGradientFill(shadowGradient);
+  g.fillRect(0, UIConstants::kTitleBarHeight, getWidth(), 8);
 
   // Draw separator between sections
   if (separatorLineY > 0) {
