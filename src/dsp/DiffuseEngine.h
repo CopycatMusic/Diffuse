@@ -52,14 +52,13 @@ public:
   int getGrainMode() const { return grainMode.load(); }
 
   /**
-   * Set output gain in decibels.
+   * Set stereo width as percentage (0-100%).
+   * 0% is mono, 100% is full stereo.
    */
-  void setGain(float decibels) {
-    outputGain = juce::Decibels::decibelsToGain(decibels);
+  void setStereoWidth(float width) {
+    stereoWidth = juce::jlimit(0.0f, 100.0f, width);
   }
-  float getGain() const {
-    return juce::Decibels::gainToDecibels(outputGain.load());
-  }
+  float getStereoWidth() const { return stereoWidth.load(); }
 
   /**
    * Set frequency-domain feedback amount (0.0-0.95).
@@ -110,7 +109,7 @@ private:
   std::atomic<float> lowCutFreq{400.0f};    // Hz
   std::atomic<bool> decayEnabled{false};    // Decay toggle
   std::atomic<float> mix{1.0f};             // 0.0 = dry, 1.0 = wet
-  std::atomic<float> outputGain{1.0f};      // Multiplier (default 0dB = 1.0)
+  std::atomic<float> stereoWidth{100.0f};   // 0-100% (Mono to Stereo)
   std::atomic<float> feedbackAmount{0.0f};  // 0.0-0.95 feedback mix
   std::atomic<int> grainMode{0};            // 0: 1x, 1: 2x, 2: 4x
 

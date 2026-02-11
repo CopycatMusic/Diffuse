@@ -147,16 +147,15 @@ void DiffuseEngine::process(juce::AudioBuffer<float> &buffer) {
                            });
   }
 
-  // Apply dry/wet mix and output gain
+  // Apply dry/wet mix
   float dryGain = 1.0f - mixAmount;
   float wetGain = mixAmount;
-  float outG = outputGain.load();
 
   for (int ch = 0; ch < numChannels; ++ch) {
     auto *wet = buffer.getWritePointer(ch);
     auto *dry = dryBuffer.getReadPointer(ch);
     for (int i = 0; i < numSamples; ++i) {
-      wet[i] = (dry[i] * dryGain + wet[i] * wetGain) * outG;
+      wet[i] = (dry[i] * dryGain + wet[i] * wetGain);
     }
   }
 }
@@ -212,7 +211,6 @@ void DiffuseEngine::applyDiffuse(std::complex<float> *spectrum, int numBins,
         }
 
         // Integer hash function (Wang Hash) for chaotic per-bin distribution
-        // Adjacent bins will have completely uncorrelated delay times
         auto intHash = [](uint32_t x) -> float {
           x = ((x >> 16) ^ x) * 0x45d9f3b;
           x = ((x >> 16) ^ x) * 0x45d9f3b;
@@ -230,11 +228,21 @@ void DiffuseEngine::applyDiffuse(std::complex<float> *spectrum, int numBins,
 
         int effectiveBin = (bin / multiplier) * multiplier;
 
-        // Different seed offset for left/right channel stereo separation
-        uint32_t seed = static_cast<uint32_t>(effectiveBin) +
-                        (isLeftChannel ? 0x243F6A88u : 0x9E3779B9u);
-        // Direct mapping: [0, D_max] with smooth transition near lowcut
-        float hash = intHash(seed);
+        // Stereo Width Logic: Interpolate between Mono (avg hash) and Stereo
+        // (independent hash)
+        float width = stereoWidth.load() / 100.0f;
+
+        uint32_t seedL =
+            static_cast<uint32_t>(effectiveBin) + 0x243F6A88u; // Left Seed
+        uint32_t seedR =
+            static_cast<uint32_t>(effectiveBin) + 0x9E3779B9u; // Right Seed
+
+        float hL = intHash(seedL);
+        float hR = intHash(seedR);
+        float hAvg = (hL + hR) * 0.5f;
+
+        float currentRawH = isLeftChannel ? hL : hR;
+        float hash = hAvg + (currentRawH - hAvg) * width;
 
         // LFO Modulation: delayMs = hash * diffuseMaxMs * (1.0 + depth *
         // sin(phase + binOffset))

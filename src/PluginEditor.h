@@ -76,11 +76,11 @@ private:
   std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
       mixAttachment;
 
-  // Gain Knob
-  juce::Slider gainSlider;
-  juce::Label gainLabel;
+  // Stereo Knob
+  juce::Slider stereoSlider;
+  juce::Label stereoLabel;
   std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
-      gainAttachment;
+      stereoAttachment;
 
   // LFO (Mod) Knobs
   juce::Slider modRateSlider;

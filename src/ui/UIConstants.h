@@ -20,7 +20,7 @@ constexpr int kSubGap = 2;   // Tight gap (e.g. Label to Knob)
 
 // ===== Element Dimensions =====
 constexpr int kElementHeight = 15; // Standard height for labels and textboxes
-constexpr int kRowHeight = 25;     // Standard height for buttons/toggles
+constexpr int kRowHeight = 22;     // Standard height for buttons/toggles
 constexpr int kLargeTextBoxWidth = 80;
 constexpr int kSmallTextBoxWidth = 60;
 constexpr int kTextGap = 20; // Horizontal gap between knob and text
@@ -34,12 +34,12 @@ constexpr int kMiniKnob = 40;
 // Horizontal gaps for each row
 constexpr int kRow1HGap = 20; // Diffuse & Feedback
 constexpr int kRow2HGap = 20; // LFO & Cutoff
-constexpr int kRow3HGap = 10; // Decay & Grain
+constexpr int kRow3HGap = 15; // Decay & Grain
 constexpr int kRow4HGap = 15; // Bottom (FFT, Gain, Mix)
 
 // ===== Component Specifics =====
 constexpr int kButtonWidth = 80;
-constexpr int kSegmentedItemWidth = 40;
+constexpr int kSegmentedItemWidth = 38;
 constexpr int kButtonShadowMargin = 15;
 constexpr float kBorderWidth = 1.6f;
 

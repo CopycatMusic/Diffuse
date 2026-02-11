@@ -27,18 +27,25 @@ CopycatDiffuseProcessor::createParameterLayout() {
       juce::NormalisableRange<float>(20.0f, 2000.0f, 1.0f, 0.5f), 400.0f,
       juce::AudioParameterFloatAttributes().withLabel("Hz")));
 
-  // LFO Rate (Fixed at 0.2Hz)
+  // LFO Rate (0.01-5Hz, midpoint 0.5Hz, continuous)
+  auto rateRange = juce::NormalisableRange<float>(0.01f, 5.0f);
+  rateRange.setSkewForCentre(0.5f);
   params.push_back(std::make_unique<juce::AudioParameterFloat>(
-      juce::ParameterID{"modrate", 1}, "LFO Rate",
-      juce::NormalisableRange<float>(0.01f, 5.0f, 0.01f, 0.4f), 0.2f,
-      juce::AudioParameterFloatAttributes().withLabel("Hz")));
+      juce::ParameterID{"modrate", 1}, "LFO Rate", rateRange, 0.2f,
+      juce::AudioParameterFloatAttributes()
+          .withLabel("Hz")
+          .withStringFromValueFunction(
+              [](float v, int) { return juce::String(v, 2); })));
 
-  // LFO Depth (0-100%)
-  auto depthRange = juce::NormalisableRange<float>(0.0f, 100.0f, 0.1f);
-  depthRange.setSkewForCentre(50.0f);
+  // LFO Depth (0-100%, midpoint 10%, continuous)
+  auto depthRange = juce::NormalisableRange<float>(0.0f, 100.0f);
+  depthRange.setSkewForCentre(10.0f);
   params.push_back(std::make_unique<juce::AudioParameterFloat>(
       juce::ParameterID{"moddepth", 1}, "LFO Depth", depthRange, 5.0f,
-      juce::AudioParameterFloatAttributes().withLabel("%")));
+      juce::AudioParameterFloatAttributes()
+          .withLabel("%")
+          .withStringFromValueFunction(
+              [](float v, int) { return juce::String(v, 1); })));
 
   // FFT Size (7-level choice: 64, 128, 256, 512, 1024, 2048, 4096)
   params.push_back(std::make_unique<juce::AudioParameterChoice>(
@@ -68,11 +75,11 @@ CopycatDiffuseProcessor::createParameterLayout() {
       juce::ParameterID{"grain", 1}, "Grain",
       juce::StringArray{"1x", "4x", "16x"}, 0));
 
-  // Output Gain (-6 to +6 dB, default 0 dB)
+  // Stereo Width (0-100%, default 100%)
   params.push_back(std::make_unique<juce::AudioParameterFloat>(
-      juce::ParameterID{"gain", 1}, "Gain",
-      juce::NormalisableRange<float>(-6.0f, 6.0f, 0.1f), 0.0f,
-      juce::AudioParameterFloatAttributes().withLabel("dB")));
+      juce::ParameterID{"stereo", 1}, "Stereo",
+      juce::NormalisableRange<float>(0.0f, 100.0f, 0.1f), 100.0f,
+      juce::AudioParameterFloatAttributes().withLabel("%")));
 
   return {params.begin(), params.end()};
 }
@@ -143,9 +150,9 @@ void CopycatDiffuseProcessor::processBlock(juce::AudioBuffer<float> &buffer,
     engine.setMix(mixParam->load() / 100.0f); // Convert % to 0-1
   }
 
-  auto *gainParam = parameters.getRawParameterValue("gain");
-  if (gainParam) {
-    engine.setGain(gainParam->load());
+  auto *stereoParam = parameters.getRawParameterValue("stereo");
+  if (stereoParam) {
+    engine.setStereoWidth(stereoParam->load());
   }
 
   auto *feedbackParam = parameters.getRawParameterValue("feedback");

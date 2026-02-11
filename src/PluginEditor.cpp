@@ -28,9 +28,16 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
   logoLabelCopy.setJustificationType(juce::Justification::centredLeft);
   logoLabelCopy.setBorderSize(
       juce::BorderSize<int>(0, 0, 0, 0)); // Remove padding to ensure tight fit
+
+  auto logoShadow = juce::DropShadow(
+      juce::Colours::black.withAlpha(UIConstants::kShadowAlpha), 6, {0, 2});
+  auto *logoEffect1 = new juce::DropShadowEffect();
+  logoEffect1->setShadowProperties(logoShadow);
+  logoLabelCopy.setComponentEffect(logoEffect1);
+
   addAndMakeVisible(logoLabelCopy);
 
-  logoLabelCat.setText("CAT", juce::dontSendNotification);
+  logoLabelCat.setText("CAT.", juce::dontSendNotification);
   logoLabelCat.setFont(titleFont.withHeight(UIConstants::kDefaultFontSize));
   logoLabelCat.getProperties().set("isTitle", true);
   logoLabelCat.setColour(juce::Label::textColourId,
@@ -38,6 +45,11 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
   logoLabelCat.setJustificationType(juce::Justification::centredLeft);
   logoLabelCat.setBorderSize(
       juce::BorderSize<int>(0, 0, 0, 0)); // Remove padding
+
+  auto *logoEffect2 = new juce::DropShadowEffect();
+  logoEffect2->setShadowProperties(logoShadow);
+  logoLabelCat.setComponentEffect(logoEffect2);
+
   addAndMakeVisible(logoLabelCat);
 
   // ===== Title Bar: Single white label =====
@@ -47,6 +59,13 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
   titleLabel.setFont(titleFont);
   titleLabel.setColour(juce::Label::textColourId, juce::Colours::white);
   titleLabel.setJustificationType(juce::Justification::centred);
+
+  auto titleShadow = juce::DropShadow(
+      juce::Colours::black.withAlpha(UIConstants::kShadowAlpha), 10, {2, 3});
+  auto *titleEffect = new juce::DropShadowEffect();
+  titleEffect->setShadowProperties(titleShadow);
+  titleLabel.setComponentEffect(titleEffect);
+
   addAndMakeVisible(titleLabel);
 
   // ===== Section 1: Diffuse + LowCut + Decay =====
@@ -221,23 +240,23 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
                      CustomLookAndFeel::getTextPrimary());
   addAndMakeVisible(mixLabel);
 
-  // Gain Knob (Small, Label Above, Value Below)
-  gainSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-  gainSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false,
-                             UIConstants::kSmallTextBoxWidth,
-                             UIConstants::kElementHeight);
-  gainSlider.setTextValueSuffix("dB");
-  gainSlider.setMouseDragSensitivity(150);
-  addAndMakeVisible(gainSlider);
-  gainAttachment =
+  // Stereo Knob (Small, Label Above, Value Below)
+  stereoSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+  stereoSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false,
+                               UIConstants::kSmallTextBoxWidth,
+                               UIConstants::kElementHeight);
+  stereoSlider.setTextValueSuffix("%");
+  stereoSlider.setMouseDragSensitivity(150);
+  addAndMakeVisible(stereoSlider);
+  stereoAttachment =
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-          processorRef.getParameters(), "gain", gainSlider);
+          processorRef.getParameters(), "stereo", stereoSlider);
 
-  gainLabel.setText("Gain", juce::dontSendNotification);
-  gainLabel.setJustificationType(juce::Justification::centred);
-  gainLabel.setColour(juce::Label::textColourId,
-                      CustomLookAndFeel::getTextPrimary());
-  addAndMakeVisible(gainLabel);
+  stereoLabel.setText("Stereo", juce::dontSendNotification);
+  stereoLabel.setJustificationType(juce::Justification::centred);
+  stereoLabel.setColour(juce::Label::textColourId,
+                        CustomLookAndFeel::getTextPrimary());
+  addAndMakeVisible(stereoLabel);
 
   // LFO Rate Knob
   modRateSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
@@ -372,11 +391,12 @@ void CopycatDiffuseEditor::resized() {
   // 40 - (16 * 2) = 8. So 4px padding top.
   const int totalLogoHeight = logoFontSize * 2 - 4;
   const int logoStartY = (UIConstants::kTitleBarHeight - totalLogoHeight) / 2;
-  const int logoWidth = 48; // Enough to fit "COPY"
+  const int logoWidth = 64;                // Increased to fit shadow
+  const int logoHeight = logoFontSize + 8; // Extra height for shadow
 
-  logoLabelCopy.setBounds(logoX, logoStartY, logoWidth, logoFontSize);
-  logoLabelCat.setBounds(logoX, logoStartY + logoFontSize - 4, logoWidth,
-                         logoFontSize);
+  logoLabelCopy.setBounds(logoX, logoStartY - 4, logoWidth, logoHeight);
+  logoLabelCat.setBounds(logoX, logoStartY + logoFontSize - 8, logoWidth,
+                         logoHeight);
 
   int y = UIConstants::kTitleBarHeight + margin;
 
@@ -523,16 +543,16 @@ void CopycatDiffuseEditor::resized() {
                           smallKnob + UIConstants::kElementHeight +
                               UIConstants::kSubGap);
 
-  // Gain - Center
-  int gainX = fftX + itemWidth + itemGap;
-  gainLabel.setBounds(gainX, bottomRowLabelY, itemWidth,
-                      UIConstants::kElementHeight);
-  gainSlider.setBounds(gainX, bottomRowKnobY, itemWidth,
-                       smallKnob + UIConstants::kElementHeight +
-                           UIConstants::kSubGap);
+  // Stereo - Center
+  int stereoX = fftX + itemWidth + itemGap;
+  stereoLabel.setBounds(stereoX, bottomRowLabelY, itemWidth,
+                        UIConstants::kElementHeight);
+  stereoSlider.setBounds(stereoX, bottomRowKnobY, itemWidth,
+                         smallKnob + UIConstants::kElementHeight +
+                             UIConstants::kSubGap);
 
   // Mix - Right
-  int mixX = gainX + itemWidth + itemGap;
+  int mixX = stereoX + itemWidth + itemGap;
   mixLabel.setBounds(mixX, bottomRowLabelY, itemWidth,
                      UIConstants::kElementHeight);
   mixSlider.setBounds(mixX, bottomRowKnobY, itemWidth,
