@@ -1,83 +1,172 @@
-name: Build VST3 (Windows & macOS)
+name: Build Plugin
 
 on:
   push:
+    branches: [ main, master ]
     tags:
       - 'v*'
+  pull_request:
+    branches: [ main, master ]
   workflow_dispatch:
 
+env:
+  BUILD_TYPE: Release
+  JUCE_VERSION: "8.0.12"
+
 jobs:
-  build:
-    name: Build on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [windows-latest, macos-latest]
-
+  # ===========================================================================
+  # macOS Build (Universal Binary: Intel + Apple Silicon)
+  # ===========================================================================
+  build-macos:
+    runs-on: macos-latest
+    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          submodules: true
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Extract version from CMakeLists.txt
+      id: version
+      run: |
+        VERSION=$(grep -oE 'project\(CopycatDiffuse VERSION ([0-9.]+)' CMakeLists.txt | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
+        echo "PROJECT_VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "Detected version: $VERSION"
+        
+    - name: Cache JUCE
+      uses: actions/cache@v4
+      id: cache-juce-macos
+      with:
+        path: ${{ github.workspace }}/JUCE
+        key: juce-macos-${{ env.JUCE_VERSION }}
+        
+    - name: Download JUCE
+      if: steps.cache-juce-macos.outputs.cache-hit != 'true'
+      run: |
+        git clone --depth 1 --branch ${{ env.JUCE_VERSION }} https://github.com/juce-framework/JUCE.git
+        
+    - name: Configure CMake
+      run: |
+        cmake -B build \
+          -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+          -DJUCE_DIR=${{ github.workspace }}/JUCE \
+          -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
+          
+    - name: Build All Targets
+      run: cmake --build build --config ${{ env.BUILD_TYPE }} -j$(sysctl -n hw.ncpu)
+      
+    - name: Package macOS
+      run: |
+        mkdir -p artifacts/macOS
+        # Note: PRODUCT_NAME is "CopyCat Diffuse" and TARGET_NAME is "CopycatDiffuse"
+        cp -R "build/CopycatDiffuse_artefacts/${{ env.BUILD_TYPE }}/AU/CopyCat Diffuse.component" artifacts/macOS/
+        cp -R "build/CopycatDiffuse_artefacts/${{ env.BUILD_TYPE }}/VST3/CopyCat Diffuse.vst3" artifacts/macOS/
+        
+    - name: Upload macOS Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: macOS-Artifacts
+        path: artifacts/macOS/
+        retention-days: 30
 
-      - name: Setup CMake
-        uses: jwlawrence/actions-setup-cmake@v2
-        with:
-          cmake-version: '3.25.x'
+  # ===========================================================================
+  # Windows Build (64-bit)
+  # ===========================================================================
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Extract version from CMakeLists.txt
+      id: version
+      shell: pwsh
+      run: |
+        $content = Get-Content CMakeLists.txt -Raw
+        if ($content -match 'project\(CopycatDiffuse VERSION ([0-9.]+)') {
+          $version = $matches[1]
+          echo "PROJECT_VERSION=$version" >> $env:GITHUB_OUTPUT
+          echo "Detected version: $version"
+        }
+        
+    - name: Cache JUCE
+      uses: actions/cache@v4
+      id: cache-juce-windows
+      with:
+        path: C:/JUCE
+        key: juce-windows-${{ env.JUCE_VERSION }}
+        
+    - name: Download JUCE
+      if: steps.cache-juce-windows.outputs.cache-hit != 'true'
+      run: |
+        cd C:/
+        git clone --depth 1 --branch ${{ env.JUCE_VERSION }} https://github.com/juce-framework/JUCE.git
+        
+    - name: Configure CMake
+      run: |
+        cmake -B build `
+          -G "Visual Studio 17 2022" `
+          -A x64 `
+          -DJUCE_DIR=C:/JUCE
+      shell: bash
+          
+    - name: Build All Targets
+      run: cmake --build build --config ${{ env.BUILD_TYPE }} --parallel
+      
+    - name: Package Windows
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory -Force -Path artifacts/Windows
+        Copy-Item -Recurse "build/CopycatDiffuse_artefacts/${{ env.BUILD_TYPE }}/VST3/CopyCat Diffuse.vst3" artifacts/Windows/
+        
+    - name: Upload Windows Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: Windows-Artifacts
+        path: artifacts/Windows/
+        retention-days: 30
 
-      - name: Install JUCE (macOS)
-        if: matrix.os == 'macos-latest'
-        run: |
-          git clone --depth 1 https://github.com/juce-framework/JUCE.git $HOME/JUCE
-          echo "JUCE_DIR=$HOME/JUCE" >> $GITHUB_ENV
-
-      - name: Install JUCE (Windows)
-        if: matrix.os == 'windows-latest'
-        shell: bash
-        run: |
-          git clone --depth 1 https://github.com/juce-framework/JUCE.git C:/JUCE
-          echo "JUCE_DIR=C:/JUCE" >> $GITHUB_ENV
-
-      - name: Configure CMake
-        run: |
-          cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release .
-        if: matrix.os == 'windows-latest'
-
-      - name: Configure CMake (macOS)
-        run: |
-          cmake -B build -G Xcode -DCMAKE_BUILD_TYPE=Release .
-        if: matrix.os == 'macos-latest'
-
-      - name: Build
-        run: cmake --build build --config Release --parallel 4
-
-      - name: Zip Artifacts (Windows)
-        if: matrix.os == 'windows-latest'
-        shell: bash
-        run: |
-          cd build/CopycatDiffuse_artefacts/Release/VST3
-          7z a ../../../../CopycatDiffuse_Win_VST3.zip .
-
-      - name: Zip Artifacts (macOS)
-        if: matrix.os == 'macos-latest'
-        run: |
-          cd build/CopycatDiffuse_artefacts/Release/VST3
-          zip -r ../../../../CopycatDiffuse_Mac_VST3.zip .
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: CopycatDiffuse-${{ matrix.os }}
-          path: |
-            *.zip
-
-      - name: Create Release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            *.zip
-          draft: true
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  # ===========================================================================
+  # Create Release (on tag push)
+  # ===========================================================================
+  create-release:
+    needs: [build-macos, build-windows]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    permissions:
+      contents: write
+      
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+        
+    - name: Display structure
+      run: ls -R artifacts
+      
+    - name: Zip Artifacts
+      run: |
+        cd artifacts/macOS-Artifacts
+        zip -r ../../CopycatDiffuse_macOS.zip .
+        cd ../../
+        cd artifacts/Windows-Artifacts
+        zip -r ../../CopycatDiffuse_Windows.zip .
+        cd ../../
+      
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        draft: true
+        prerelease: false
+        generate_release_notes: true
+        files: |
+          CopycatDiffuse_macOS.zip
+          CopycatDiffuse_Windows.zip
+        body: |
+          ## Download Instructions
+          
+          Download artifacts and follow installation instructions.
+          
+          **macOS**: Extract `CopycatDiffuse_macOS.zip` and move files to `/Library/Audio/Plug-Ins/`
+          **Windows**: Extract `CopycatDiffuse_Windows.zip` and move file to `C:\Program Files\Common Files\VST3`
