@@ -17,7 +17,7 @@ CopycatDiffuseProcessor::createParameterLayout() {
   // Diffuse Amount (0-2000ms, default 0, skew 0.5 for fine control of lower
   // values)
   params.push_back(std::make_unique<juce::AudioParameterFloat>(
-      juce::ParameterID{"diffuse", 1}, "Amount",
+      juce::ParameterID{"diffuse", 1}, "Diffuse",
       juce::NormalisableRange<float>(0.0f, 2000.0f, 0.1f, 0.5f), 0.0f,
       juce::AudioParameterFloatAttributes().withLabel("ms")));
 

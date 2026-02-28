@@ -1,0 +1,83 @@
+name: Build VST3 (Windows & macOS)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Setup CMake
+        uses: jwlawrence/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.25.x'
+
+      - name: Install JUCE (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          git clone --depth 1 https://github.com/juce-framework/JUCE.git $HOME/JUCE
+          echo "JUCE_DIR=$HOME/JUCE" >> $GITHUB_ENV
+
+      - name: Install JUCE (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: bash
+        run: |
+          git clone --depth 1 https://github.com/juce-framework/JUCE.git C:/JUCE
+          echo "JUCE_DIR=C:/JUCE" >> $GITHUB_ENV
+
+      - name: Configure CMake
+        run: |
+          cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release .
+        if: matrix.os == 'windows-latest'
+
+      - name: Configure CMake (macOS)
+        run: |
+          cmake -B build -G Xcode -DCMAKE_BUILD_TYPE=Release .
+        if: matrix.os == 'macos-latest'
+
+      - name: Build
+        run: cmake --build build --config Release --parallel 4
+
+      - name: Zip Artifacts (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: bash
+        run: |
+          cd build/CopycatDiffuse_artefacts/Release/VST3
+          7z a ../../../../CopycatDiffuse_Win_VST3.zip .
+
+      - name: Zip Artifacts (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          cd build/CopycatDiffuse_artefacts/Release/VST3
+          zip -r ../../../../CopycatDiffuse_Mac_VST3.zip .
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: CopycatDiffuse-${{ matrix.os }}
+          path: |
+            *.zip
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            *.zip
+          draft: true
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

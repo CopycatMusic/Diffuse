@@ -37,7 +37,7 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
 
   addAndMakeVisible(logoLabelCopy);
 
-  logoLabelCat.setText("CAT.", juce::dontSendNotification);
+  logoLabelCat.setText("CAT", juce::dontSendNotification);
   logoLabelCat.setFont(titleFont.withHeight(UIConstants::kDefaultFontSize));
   logoLabelCat.getProperties().set("isTitle", true);
   logoLabelCat.setColour(juce::Label::textColourId,

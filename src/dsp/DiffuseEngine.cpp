@@ -382,8 +382,7 @@ void DiffuseEngine::updateLFO(int numSamples) {
     lfoPhaseL =
         std::fmod(lfoPhaseL + phaseInc, 2.0 * juce::MathConstants<double>::pi);
 
-    // Subtle phase offset for right channel to enhance stereo
-    lfoPhaseR = std::fmod(lfoPhaseL + juce::MathConstants<double>::pi * 0.5,
-                          2.0 * juce::MathConstants<double>::pi);
+    // Sync right channel LFO with left channel
+    lfoPhaseR = lfoPhaseL;
   }
 }
