@@ -168,4 +168,7 @@ jobs:
           Download artifacts and follow installation instructions.
           
           **macOS**: Extract `CopycatDiffuse_macOS.zip` and move files to `/Library/Audio/Plug-Ins/`
+          Alternatively, use `./resources/Scripts/create_pkg.sh` and `release_macos.sh` to create a signed installer.
+          
           **Windows**: Extract `CopycatDiffuse_Windows.zip` and move file to `C:\Program Files\Common Files\VST3`
+          Alternatively, use `./resources/Scripts/installer_win.iss` with Inno Setup to create an installer exe.
