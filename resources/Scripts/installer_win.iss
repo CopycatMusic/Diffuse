@@ -30,7 +30,6 @@ AppUpdatesURL={#AppURL}
 
 DefaultDirName={commoncf64}\VST3\{#AppName}.vst3
 DefaultGroupName={#AppName}
-DisableDirPage=yes
 DisableProgramGroupPage=yes
 
 OutputDir=Output
