@@ -28,8 +28,9 @@ AppPublisherURL={#AppURL}
 AppSupportURL={#AppURL}
 AppUpdatesURL={#AppURL}
 
-DefaultDirName={autopf}\{#AppPublisher}\{#AppName}
+DefaultDirName={commoncf64}\VST3\{#AppName}.vst3
 DefaultGroupName={#AppName}
+DisableDirPage=yes
 DisableProgramGroupPage=yes
 
 OutputDir=Output
