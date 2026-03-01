@@ -7,8 +7,15 @@
 ;     ├── CopyCat Diffuse.vst3/
 ;     └── installer_win.iss (copy this file here)
 
+#ifndef AppVersion
+  #define AppVersion "1.0.0"
+#endif
+
+#ifndef SourcePath
+  #define SourcePath ".."
+#endif
+
 #define AppName "CopyCat Diffuse"
-#define AppVersion "1.0.0"
 #define AppPublisher "CopyCat"
 #define AppURL "https://github.com/CopycatMusic/CopycatDiffuse"
 
@@ -38,7 +45,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
 ; The plugin bundle (.vst3 folder) - relative path from script location
-Source: "{#AppName}.vst3\*"; DestDir: "{commoncf64}\VST3\{#AppName}.vst3"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#SourcePath}\{#AppName}.vst3\*"; DestDir: "{commoncf64}\VST3\{#AppName}.vst3"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\Uninstall {#AppName}"; Filename: "{uninstallexe}"

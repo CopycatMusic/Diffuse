@@ -110,12 +110,19 @@ jobs:
           
     - name: Build All Targets
       run: cmake --build build --config ${{ env.BUILD_TYPE }} --parallel
-      
+
+    - name: Build Installer (Windows)
+      shell: pwsh
+      run: |
+        $version = "${{ steps.version.outputs.PROJECT_VERSION }}"
+        iscc /DAppVersion=$version /DSourcePath=build\CopycatDiffuse_artefacts\${{ env.BUILD_TYPE }}\VST3 resources\Scripts\installer_win.iss
+
     - name: Package Windows
       shell: pwsh
       run: |
         New-Item -ItemType Directory -Force -Path artifacts/Windows
         Copy-Item -Recurse "build/CopycatDiffuse_artefacts/${{ env.BUILD_TYPE }}/VST3/CopyCat Diffuse.vst3" artifacts/Windows/
+        Copy-Item "resources/Scripts/Output/*.exe" artifacts/Windows/
         
     - name: Upload Windows Artifacts
       uses: actions/upload-artifact@v4
@@ -162,13 +169,12 @@ jobs:
         files: |
           CopycatDiffuse_macOS.zip
           CopycatDiffuse_Windows.zip
+          artifacts/Windows-Artifacts/*.exe
         body: |
           ## Download Instructions
           
-          Download artifacts and follow installation instructions.
+          **Windows**: Run the `.exe` installer for automatic installation, or extract `CopycatDiffuse_Windows.zip` for manual VST3 installation.
           
           **macOS**: Extract `CopycatDiffuse_macOS.zip` and move files to `/Library/Audio/Plug-Ins/`
-          Alternatively, use `./resources/Scripts/create_pkg.sh` and `release_macos.sh` to create a signed installer.
-          
-          **Windows**: Extract `CopycatDiffuse_Windows.zip` and move file to `C:\Program Files\Common Files\VST3`
-          Alternatively, use `./resources/Scripts/installer_win.iss` with Inno Setup to create an installer exe.
+          Alternatively, use `./resources/Scripts/create_pkg.sh` to create a local `.pkg` installer.
+
