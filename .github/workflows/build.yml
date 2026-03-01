@@ -115,7 +115,8 @@ jobs:
       shell: pwsh
       run: |
         $version = "${{ steps.version.outputs.PROJECT_VERSION }}"
-        iscc /DAppVersion=$version /DSourcePath=build\CopycatDiffuse_artefacts\${{ env.BUILD_TYPE }}\VST3 resources\Scripts\installer_win.iss
+        $absSourcePath = Join-Path $env:GITHUB_WORKSPACE "build\CopycatDiffuse_artefacts\${{ env.BUILD_TYPE }}\VST3"
+        iscc /DAppVersion=$version "/DSourcePath=$absSourcePath" resources\Scripts\installer_win.iss
 
     - name: Package Windows
       shell: pwsh
