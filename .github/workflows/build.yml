@@ -107,7 +107,6 @@ jobs:
           -G "Visual Studio 17 2022" `
           -A x64 `
           -DJUCE_DIR=C:/JUCE
-      shell: bash
           
     - name: Build All Targets
       run: cmake --build build --config ${{ env.BUILD_TYPE }} --parallel
