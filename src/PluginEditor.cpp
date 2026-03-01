@@ -9,12 +9,13 @@ CopycatDiffuseEditor::CopycatDiffuseEditor(CopycatDiffuseProcessor &p)
   // Load embedded Montserrat fonts
   auto boldTypeface = juce::Typeface::createSystemTypefaceFor(
       BinaryData::MontserratBold_ttf, BinaryData::MontserratBold_ttfSize);
-  titleFont = juce::Font(boldTypeface).withHeight(UIConstants::kTitleFontSize);
+  titleFont = juce::Font(
+      juce::FontOptions(boldTypeface).withHeight(UIConstants::kTitleFontSize));
 
   auto mediumTypeface = juce::Typeface::createSystemTypefaceFor(
       BinaryData::MontserratMedium_ttf, BinaryData::MontserratMedium_ttfSize);
-  defaultFont =
-      juce::Font(mediumTypeface).withHeight(UIConstants::kDefaultFontSize);
+  defaultFont = juce::Font(juce::FontOptions(mediumTypeface)
+                               .withHeight(UIConstants::kDefaultFontSize));
 
   // Set default font for all UI components via LookAndFeel
   customLookAndFeel.setDefaultFont(defaultFont);

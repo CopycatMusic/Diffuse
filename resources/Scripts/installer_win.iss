@@ -8,7 +8,7 @@
 ;     └── installer_win.iss (copy this file here)
 
 #ifndef AppVersion
-  #define AppVersion "1.0.0"
+  #define AppVersion "1.0.1"
 #endif
 
 #ifndef SourcePath
