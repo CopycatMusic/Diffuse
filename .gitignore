@@ -1,97 +1,86 @@
-# Build directories
-build/
-cmake-build-*/
-out/
-
-# IDE / Editor
-.idea/
-.vscode/
-*.xcodeproj/
-*.xcworkspace/
-*.suo
-*.user
-*.userosscache
-*.sln.docstates
-
-# Xcode
-DerivedData/
-*.pbxuser
-!default.pbxuser
-*.mode1v3
-!default.mode1v3
-*.mode2v3
-!default.mode2v3
-*.perspectivev3
-!default.perspectivev3
-xcuserdata/
-*.xccheckout
-*.moved-aside
-*.hmap
-*.ipa
-*.dSYM.zip
-*.dSYM
-
-# Visual Studio
-.vs/
-x64/
-x86/
-Debug/
-Release/
-*.pdb
-*.ilk
-*.obj
-*.lib
-*.exp
-
-# CMake
-CMakeCache.txt
-CMakeFiles/
-cmake_install.cmake
-Makefile
-install_manifest.txt
-compile_commands.json
-CTestTestfile.cmake
-
-# JUCE
-JuceLibraryCode/
-Builds/
-*.component
-*.vst3
-*.vst
-*.aax
-*.aupreset
-
-# macOS
+# OS and editor files
 .DS_Store
-.AppleDouble
-.LSOverride
 ._*
-.Spotlight-V100
-.Trashes
-
-# Windows
 Thumbs.db
 ehthumbs.db
 Desktop.ini
-
-# Logs
-*.log
-logs/
-
-# Temporary files
-*.tmp
-*.temp
 *.swp
 *.swo
 *~
+.idea/
+.vscode/
+.vs/
+*.xcodeproj/
+*.xcworkspace/
+DerivedData/
+*.user
+*.suo
 
-# Signing/Notarization artifacts
+# CMake / JUCE generated files
+/build/
+/build-*/
+cmake-build-*/
+/out/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+install_manifest.txt
+CTestTestfile.cmake
+Makefile
+JuceLibraryCode/
+Builds/
+*_artefacts/
+juce_binarydata_*/
+/JUCE/
+
+# Compiled plugins and debugging output
+*.o
+*.obj
+*.a
+*.lib
+*.dll
+*.dylib
+*.so
+*.vst3/
+*.component/
+*.vst/
+*.aax/
+*.app/
+*.pdb
+*.dSYM/
+*.aupreset
+Debug/
+Release/
+x64/
+x86/
+
+# Local distribution, signing helpers and signing material
+/release/
+/artifacts/
+/resources/Scripts/create_pkg.sh
+/resources/Scripts/release_macos.sh
+/resources/Scripts/Output/
+installer/output/
+*.exe
+*.zip
 *.dmg
 *.pkg
-*.zip
+*.p12
+*.pfx
+*.key
+.env
+.env.*
 
-# Output artifacts (keep in separate release folder)
-installer/output/
-
-
-resources/BackUp
+# Local-only archives, tooling and logs
+/_local_archive/
+.agent/
+.agents/
+.codex/
+resources/BackUp/
+*.log
+build_log.txt
+logs/
+*.tmp
+*.temp
+.cache/

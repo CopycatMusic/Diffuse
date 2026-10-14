@@ -9,6 +9,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 env:
   BUILD_TYPE: Release
   JUCE_VERSION: "8.0.12"
@@ -47,6 +50,7 @@ jobs:
       run: |
         cmake -B build \
           -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+          -DCOPYCAT_COPY_PLUGIN_AFTER_BUILD=OFF \
           -DJUCE_DIR=${{ github.workspace }}/JUCE \
           -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
           
@@ -59,6 +63,10 @@ jobs:
         # Note: PRODUCT_NAME is "CopyCat Diffuse" and TARGET_NAME is "CopycatDiffuse"
         cp -R "build/CopycatDiffuse_artefacts/${{ env.BUILD_TYPE }}/AU/CopyCat Diffuse.component" artifacts/macOS/
         cp -R "build/CopycatDiffuse_artefacts/${{ env.BUILD_TYPE }}/VST3/CopyCat Diffuse.vst3" artifacts/macOS/
+        for bundle in "artifacts/macOS/CopyCat Diffuse.component" "artifacts/macOS/CopyCat Diffuse.vst3"; do
+          codesign --force --sign - "$bundle"
+          codesign --verify --deep --strict "$bundle"
+        done
         
     - name: Upload macOS Artifacts
       uses: actions/upload-artifact@v4
@@ -71,7 +79,7 @@ jobs:
   # Windows Build (64-bit)
   # ===========================================================================
   build-windows:
-    runs-on: windows-latest
+    runs-on: windows-2022
     
     steps:
     - name: Checkout repository
@@ -106,6 +114,7 @@ jobs:
         cmake -B build `
           -G "Visual Studio 17 2022" `
           -A x64 `
+          -DCOPYCAT_COPY_PLUGIN_AFTER_BUILD=OFF `
           -DJUCE_DIR=C:/JUCE
           
     - name: Build All Targets
@@ -155,6 +164,8 @@ jobs:
     - name: Zip Artifacts
       run: |
         cd artifacts/macOS-Artifacts
+        chmod 755 "CopyCat Diffuse.component/Contents/MacOS/CopyCat Diffuse"
+        chmod 755 "CopyCat Diffuse.vst3/Contents/MacOS/CopyCat Diffuse"
         zip -r ../../CopycatDiffuse_macOS.zip .
         cd ../../
         cd artifacts/Windows-Artifacts
@@ -177,5 +188,5 @@ jobs:
           **Windows**: Run the `.exe` installer for automatic installation, or extract `CopycatDiffuse_Windows.zip` for manual VST3 installation.
           
           **macOS**: Extract `CopycatDiffuse_macOS.zip` and move files to `/Library/Audio/Plug-Ins/`
-          Alternatively, use `./resources/Scripts/create_pkg.sh` to create a local `.pkg` installer.
+          Rescan plugins in your DAW after installation. These macOS bundles use ad-hoc signing and are not notarized.
 
